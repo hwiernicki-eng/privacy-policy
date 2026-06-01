@@ -11,6 +11,8 @@ import { ScreenVehicle } from './screens/ScreenVehicle'
 import { ScreenAlertes } from './screens/ScreenAlertes'
 import { ScreenCouts } from './screens/ScreenCouts'
 import { ScreenDocs } from './screens/ScreenDocs'
+import { Paywall } from './components/Paywall'
+import { PLANS } from './data'
 
 type TabId = 'parc' | 'alertes' | 'couts' | 'docs'
 
@@ -29,6 +31,8 @@ export default function App() {
   const [vehicleId, setVehicleId] = useState<string | null>(null)
   const [sheet, setSheet] = useState<'fab' | 'add-maintenance' | 'add-vehicle' | 'settings' | null>(null)
   const [maintenanceVehicleId, setMaintenanceVehicleId] = useState<string | undefined>(undefined)
+  const [showPaywall, setShowPaywall] = useState(false)
+  const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined)
 
   useEffect(() => { saveState(state) }, [state])
 
@@ -57,7 +61,21 @@ export default function App() {
   }
 
   const addVehicle = (v: Vehicle) => {
+    const limit = PLANS[state.plan ?? 'free'].vehicleLimit
+    if (fleet.length >= limit) {
+      setPaywallReason(`Limite de ${limit} véhicule${limit > 1 ? 's' : ''} atteinte avec le plan ${PLANS[state.plan ?? 'free'].label}`)
+      setShowPaywall(true)
+      return
+    }
     setState(s => ({ ...s, fleet: [...s.fleet, v] }))
+  }
+
+  const handleUpgrade = (plan: 'pro' | 'fleet') => {
+    // In production: redirect to Stripe checkout
+    // For now, simulate upgrade (replace with real payment flow)
+    setState(s => ({ ...s, plan }))
+    setShowPaywall(false)
+    alert(`🎉 Plan ${PLANS[plan].label} activé ! (Intégrez Stripe pour les paiements réels)`)
   }
 
   const openVehicle = (id: string) => { setVehicleId(id); setTab('parc') }
@@ -67,7 +85,7 @@ export default function App() {
     setSheet('add-maintenance')
   }
 
-  const { fleet, history, docs, dark, accent, radius, font } = state
+  const { fleet, history, docs, dark, accent, radius, font, plan = 'free' } = state
 
   const fontStack = font === 'System'
     ? 'system-ui,-apple-system,sans-serif'
@@ -95,7 +113,7 @@ export default function App() {
       />
     )
   } else if (tab === 'parc') {
-    screen = <ScreenParc fleet={fleet} onOpen={openVehicle} onTab={goTab} />
+    screen = <ScreenParc fleet={fleet} onOpen={openVehicle} onTab={goTab} plan={plan} onUpgrade={() => setShowPaywall(true)} />
   } else if (tab === 'alertes') {
     screen = <ScreenAlertes fleet={fleet} onOpen={openVehicle} />
   } else if (tab === 'couts') {
@@ -131,11 +149,21 @@ export default function App() {
               </nav>
             )}
 
+            {/* Paywall */}
+            {showPaywall && (
+              <Paywall
+                currentPlan={plan}
+                onUpgrade={handleUpgrade}
+                onClose={() => setShowPaywall(false)}
+                reason={paywallReason}
+              />
+            )}
+
             {/* FAB sheet */}
             <VSheet open={sheet === 'fab'} onClose={() => setSheet(null)} title="Ajouter au carnet">
               {([
                 { icon: 'wrench' as const, label: 'Saisir un entretien', sub: 'Vidange, révision, réparation…', action: () => { setSheet(null); openAddMaintenance(vehicleId ?? undefined) } },
-                { icon: 'scan' as const, label: 'Scanner une facture', sub: 'OCR automatique de vos factures', action: () => { setSheet(null); openAddMaintenance(vehicleId ?? undefined) } },
+                { icon: 'scan' as const, label: 'Scanner une facture', sub: PLANS[plan].ocr ? 'OCR automatique de vos factures' : '🔒 Fonctionnalité Pro', action: () => { if (!PLANS[plan].ocr) { setSheet(null); setPaywallReason('Le scanner OCR est disponible à partir du plan Pro'); setShowPaywall(true) } else { setSheet(null); openAddMaintenance(vehicleId ?? undefined) } } },
                 { icon: 'car' as const, label: 'Ajouter un véhicule', sub: 'Voiture, utilitaire, moto…', action: () => setSheet('add-vehicle') },
                 { icon: 'settings' as const, label: 'Paramètres', sub: 'Thème, couleur, police…', action: () => setSheet('settings') },
               ]).map((a, i) => (
@@ -169,6 +197,15 @@ export default function App() {
             {/* Settings sheet */}
             <VSheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Paramètres">
               <div style={{ paddingBottom: 4 }}>
+                {/* Plan banner */}
+                <div className="plan-banner" onClick={() => { setSheet(null); setShowPaywall(true) }}>
+                  <div>
+                    <div className="plan-banner__label">Votre plan</div>
+                    <div className="plan-banner__name">{PLANS[plan].label}</div>
+                  </div>
+                  {plan === 'free' && <button className="plan-banner__btn">Upgrader ✨</button>}
+                  {plan !== 'free' && <span className="plan-banner__active">Actif ✓</span>}
+                </div>
                 <div className="settings-row">
                   <div><div className="settings-row__label">Mode sombre</div><div className="settings-row__sub">Thème sombre pour l'interface</div></div>
                   <button className={'toggle-btn' + (dark ? ' toggle-btn--on' : '')} onClick={() => patchState({ dark: !dark })}>

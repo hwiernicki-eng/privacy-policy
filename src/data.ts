@@ -128,10 +128,20 @@ export const FLEET_SUMMARY = { total: 24, active: 21, late: 3, soon: 4, monthSpe
 
 export const STORAGE_KEY = 'carnet_entretien_v1'
 
+export const PLANS = {
+  free:  { label: 'Gratuit',  price: 0,     vehicleLimit: 2,  ocr: false, export: false, multi: false },
+  pro:   { label: 'Pro',      price: 9.99,  vehicleLimit: 10, ocr: true,  export: true,  multi: false },
+  fleet: { label: 'Flotte',   price: 29.99, vehicleLimit: Infinity, ocr: true, export: true, multi: true },
+}
+
 export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const s = JSON.parse(raw)
+      if (!s.plan) s.plan = 'free'
+      return s
+    }
   } catch {}
   return {
     fleet: INITIAL_FLEET,
@@ -141,6 +151,7 @@ export function loadState(): AppState {
     accent: '#E8702A',
     radius: 20,
     font: 'Hanken Grotesk',
+    plan: 'free',
   }
 }
 

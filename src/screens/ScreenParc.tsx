@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Vehicle } from '../types'
-import { FLEET_SUMMARY, fmtKm, fmtEur } from '../data'
+import { FLEET_SUMMARY, PLANS, fmtKm, fmtEur } from '../data'
 import { VIcon } from '../components/VIcon'
 import { VStatusPill, VCatTile, VChip, VStat, VTopbar } from '../components/UI'
 
@@ -8,9 +8,11 @@ interface Props {
   fleet: Vehicle[]
   onOpen: (id: string) => void
   onTab: (t: string) => void
+  plan?: 'free' | 'pro' | 'fleet'
+  onUpgrade?: () => void
 }
 
-export function ScreenParc({ fleet, onOpen, onTab }: Props) {
+export function ScreenParc({ fleet, onOpen, onTab, plan = 'free', onUpgrade }: Props) {
   const [filter, setFilter] = useState('all')
   const filters = [
     { id: 'all', label: 'Tous' },
@@ -63,6 +65,14 @@ export function ScreenParc({ fleet, onOpen, onTab }: Props) {
           <VChip key={f.id} label={f.label} active={filter === f.id} onClick={() => setFilter(f.id)} />
         ))}
       </div>
+
+      {plan === 'free' && (
+        <button className="upgrade-banner" onClick={onUpgrade}>
+          <VIcon name="bolt" size={16} />
+          <span><strong>{fleet.length}/{PLANS.free.vehicleLimit}</strong> véhicules · Passez Pro pour en ajouter plus</span>
+          <VIcon name="chevron" size={14} />
+        </button>
+      )}
 
       <div className="vlist">
         {list.map(v => <VehicleCard key={v.id} v={v} onOpen={onOpen} />)}

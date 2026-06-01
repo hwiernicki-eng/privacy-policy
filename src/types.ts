@@ -74,6 +74,7 @@ export interface AppState {
   accent: string
   radius: number
   font: string
+  plan: 'free' | 'pro' | 'fleet'
 }
 
 export interface ScannedInvoice {
