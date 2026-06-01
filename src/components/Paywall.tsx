@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { PLANS } from '../data'
 import { VIcon } from './VIcon'
 
@@ -8,13 +9,19 @@ interface Props {
   reason?: string
 }
 
+// Remplacez ces IDs par vos vrais Plan IDs PayPal (depuis developer.paypal.com)
+const PAYPAL_PLAN_IDS = {
+  pro:   'P-XXXXXXXXXXXXXXXXXXXXXXXX_PRO',
+  fleet: 'P-XXXXXXXXXXXXXXXXXXXXXXXX_FLEET',
+}
+
 const FEATURES = {
   pro: [
-    'Jusqu\'à 10 véhicules',
+    "Jusqu'à 10 véhicules",
     'Scanner OCR de factures',
     'Export PDF des rapports',
     'Historique illimité',
-    'Rappels push',
+    'Rappels entretien',
   ],
   fleet: [
     'Véhicules illimités',
@@ -22,16 +29,63 @@ const FEATURES = {
     'Tableau de bord équipe',
     'API & intégrations',
     'Support prioritaire',
-    'White-label disponible',
   ],
 }
 
+declare global {
+  interface Window {
+    paypal?: {
+      Buttons: (opts: object) => { render: (el: HTMLElement) => void }
+    }
+  }
+}
+
+function PayPalButton({ planKey, onSuccess }: { planKey: 'pro' | 'fleet'; onSuccess: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    if (!ref.current || !window.paypal) {
+      setError(true)
+      return
+    }
+    ref.current.innerHTML = ''
+    window.paypal.Buttons({
+      style: {
+        shape: 'rect',
+        color: 'blue',
+        layout: 'vertical',
+        label: 'subscribe',
+      },
+      createSubscription: (_data: unknown, actions: { subscription: { create: (o: object) => Promise<string> } }) => {
+        return actions.subscription.create({
+          plan_id: PAYPAL_PLAN_IDS[planKey],
+        })
+      },
+      onApprove: (_data: { subscriptionID: string }) => {
+        onSuccess()
+      },
+      onError: () => setError(true),
+    }).render(ref.current!)
+  }, [planKey, onSuccess])
+
+  if (error) {
+    return (
+      <div style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'center', padding: '8px 0' }}>
+        Configurez votre Client ID PayPal dans index.html
+      </div>
+    )
+  }
+  return <div ref={ref} style={{ marginTop: 12 }} />
+}
+
 export function Paywall({ currentPlan, onUpgrade, onClose, reason }: Props) {
+  const [selected, setSelected] = useState<'pro' | 'fleet'>('pro')
+
   return (
     <div className="paywall-backdrop">
       <div className="paywall">
         <div className="paywall__grip" />
-
         <button className="paywall__close" onClick={onClose}>
           <VIcon name="close" size={18} />
         </button>
@@ -49,51 +103,37 @@ export function Paywall({ currentPlan, onUpgrade, onClose, reason }: Props) {
           <p className="paywall__sub">Gérez votre flotte sans limite</p>
         </div>
 
-        <div className="paywall__plans">
-          {/* Pro */}
-          <div className="paywall__plan paywall__plan--highlight">
-            <div className="paywall__plan-badge">Populaire</div>
-            <div className="paywall__plan-name">Pro</div>
-            <div className="paywall__plan-price">
-              <span className="paywall__plan-amount">{PLANS.pro.price}€</span>
-              <span className="paywall__plan-period">/mois</span>
-            </div>
-            <ul className="paywall__features">
-              {FEATURES.pro.map(f => (
-                <li key={f}><VIcon name="check" size={14} />{f}</li>
-              ))}
-            </ul>
-            <button
-              className="paywall__btn paywall__btn--primary"
-              onClick={() => onUpgrade('pro')}
-            >
-              Choisir Pro
-            </button>
-          </div>
-
-          {/* Fleet */}
-          <div className="paywall__plan">
-            <div className="paywall__plan-name">Flotte</div>
-            <div className="paywall__plan-price">
-              <span className="paywall__plan-amount">{PLANS.fleet.price}€</span>
-              <span className="paywall__plan-period">/mois</span>
-            </div>
-            <ul className="paywall__features">
-              {FEATURES.fleet.map(f => (
-                <li key={f}><VIcon name="check" size={14} />{f}</li>
-              ))}
-            </ul>
-            <button
-              className="paywall__btn paywall__btn--secondary"
-              onClick={() => onUpgrade('fleet')}
-            >
-              Choisir Flotte
-            </button>
-          </div>
+        {/* Sélecteur de plan */}
+        <div className="paywall__tabs">
+          <button
+            className={'paywall__tab' + (selected === 'pro' ? ' paywall__tab--on' : '')}
+            onClick={() => setSelected('pro')}
+          >
+            Pro — {PLANS.pro.price}€/mois
+          </button>
+          <button
+            className={'paywall__tab' + (selected === 'fleet' ? ' paywall__tab--on' : '')}
+            onClick={() => setSelected('fleet')}
+          >
+            Flotte — {PLANS.fleet.price}€/mois
+          </button>
         </div>
 
+        {/* Features */}
+        <ul className="paywall__features paywall__features--full">
+          {FEATURES[selected].map(f => (
+            <li key={f}><VIcon name="check" size={14} />{f}</li>
+          ))}
+        </ul>
+
+        {/* Bouton PayPal */}
+        <PayPalButton
+          planKey={selected}
+          onSuccess={() => onUpgrade(selected)}
+        />
+
         <p className="paywall__legal">
-          Sans engagement · Résiliable à tout moment · Paiement sécurisé
+          Paiement sécurisé PayPal · Sans engagement · Résiliable à tout moment
         </p>
       </div>
     </div>
