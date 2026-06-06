@@ -341,7 +341,12 @@ input, select, textarea { font: inherit; }
 .paywall__btn { width: 100%; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; }
 .paywall__btn--primary { background: var(--accent); color: #fff; }
 .paywall__btn--secondary { background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
-.paywall__legal { text-align: center; font-size: 11px; color: var(--ink-3); }
+.paywall__legal { text-align: center; font-size: 11px; color: var(--ink-3); margin-top: 10px; }
+.paywall__tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.paywall__tab { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); }
+.paywall__tab--on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.paywall__features--full { margin-bottom: 4px; }
+.paywall__features--full li { font-size: 13.5px; }
 
 /* ── Plan banner & upgrade strip ──────────────── */
 .plan-banner { display: flex; align-items: center; justify-content: space-between; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 14px; padding: 13px 14px; margin-bottom: 12px; cursor: pointer; }
