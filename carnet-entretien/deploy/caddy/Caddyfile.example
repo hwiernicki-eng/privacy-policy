@@ -1,0 +1,35 @@
+# Caddy sur le VPS — option A de docs/DEPLOYMENT.md
+# Remplacer carnet.example.fr et 100.64.0.10 (IP Tailscale ou LAN du CT vue depuis le VPS).
+# Vérifier : caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy
+
+carnet.example.fr {
+	encode zstd gzip
+
+	# L'application pose ses propres en-têtes de sécurité (helmet) ; on ajoute HSTS ici.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# Pièces jointes (M8-T2) : 10 Mo par fichier, marge pour l'enveloppe multipart.
+	request_body {
+		max_size 12MB
+	}
+
+	reverse_proxy 100.64.0.10:3000 {
+		# Caddy transmet X-Forwarded-For / -Proto / -Host par défaut.
+		health_uri /health
+		health_interval 30s
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 30s
+		}
+	}
+
+	log {
+		output file /var/log/caddy/carnet.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}

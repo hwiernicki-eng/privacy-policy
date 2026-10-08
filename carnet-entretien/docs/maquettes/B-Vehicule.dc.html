@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Cockpit — Véhicule</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&amp;family=Saira:wght@400;500;600&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0B7398}a:hover{color:#085A77}
+button{font:inherit;color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #EEF1F4; color: #131820; font-family: 'Saira', system-ui, sans-serif; font-size: 15px; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="display: flex; align-items: center; gap: 8px; padding: 8px 12px">
+    <a href="B-Accueil.dc.html" aria-label="Retour au tableau de bord" style="width: 44px; height: 44px; display: grid; place-items: center; color: #131820">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+    </a>
+    <span style="flex-grow: 1; font-family: 'Saira Condensed', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: .03em">PEUGEOT 308 SW</span>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #59636F; border: 1px solid #D5DBE3; border-radius: 6px; padding: 4px 8px">GH-482-KT</span>
+  </header>
+
+  <section style="position: relative; margin: 4px 16px 0; height: 188px; border-radius: 16px; background: #FFFFFF; border: 1px solid #D5DBE3; box-shadow: inset 0 -3px 0 #E3E8EE; overflow: hidden">
+    <svg width="300" height="160" viewBox="0 0 300 160" style="position: absolute; left: 50%; top: 16px; transform: translateX(-50%)" aria-hidden="true">
+      <path d="M30 140 A120 120 0 0 1 270 140" fill="none" stroke="#D5DBE3" stroke-width="14" stroke-linecap="round"></path>
+      <path d="M30 140 A120 120 0 0 1 249.2 72.6" fill="none" stroke="#B06A00" stroke-width="14" stroke-linecap="round"></path>
+    </svg>
+    <div style="position: absolute; left: 0; right: 0; top: 76px; display: flex; flex-direction: column; align-items: center; gap: 2px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 34px; letter-spacing: .02em">101 350</span>
+      <span style="font-size: 12px; color: #59636F; letter-spacing: .14em">KILOMÈTRES</span>
+      <span style="margin-top: 6px; font-size: 13px; color: #B06A00">Vidange à 105 100 km · 3 750 km</span>
+    </div>
+    <span style="position: absolute; left: 22px; bottom: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #59636F">85 100</span>
+    <span style="position: absolute; right: 22px; bottom: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #59636F">105 100</span>
+  </section>
+
+  <section style="margin: 10px 16px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+    <div style="border-radius: 12px; background: #FFFFFF; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+      <span style="font-size: 11px; color: #59636F; letter-spacing: .08em">RYTHME</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px">1 430</span>
+      <span style="font-size: 11px; color: #59636F">km / mois</span>
+    </div>
+    <div style="border-radius: 12px; background: #FFFFFF; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+      <span style="font-size: 11px; color: #59636F; letter-spacing: .08em">DÉPENSES</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px">218,90 €</span>
+      <span style="font-size: 11px; color: #59636F">12 mois</span>
+    </div>
+    <div style="border-radius: 12px; background: #FFFFFF; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+      <span style="font-size: 11px; color: #59636F; letter-spacing: .08em">MOTEUR</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px">1.5 HDi</span>
+      <span style="font-size: 11px; color: #59636F">130 ch · 2019</span>
+    </div>
+  </section>
+
+  <div style="padding: 16px 16px 8px; font-family: 'Saira Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: .04em">AU KILOMÉTRAGE</div>
+  <section style="margin: 0 16px; border-radius: 14px; background: #FFFFFF; padding: 4px 14px">
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid #D5DBE3">
+      <span style="font-weight: 600; font-size: 14px">Plaquettes AV</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #C7372B">100 100 km</span>
+      <span style="grid-column: 1 / -1; height: 6px; border-radius: 3px; background: #D5DBE3; overflow: hidden"><span style="display: block; width: 100%; height: 100%; background: #C7372B"></span></span>
+    </div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid #D5DBE3">
+      <span style="font-weight: 600; font-size: 14px">Vidange</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B06A00">105 100 km</span>
+      <span style="grid-column: 1 / -1; height: 6px; border-radius: 3px; background: #D5DBE3; overflow: hidden"><span style="display: block; width: 81%; height: 100%; background: #B06A00"></span></span>
+    </div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0">
+      <span style="font-weight: 600; font-size: 14px">Distribution</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #59636F">175 012 km</span>
+      <span style="grid-column: 1 / -1; height: 6px; border-radius: 3px; background: #D5DBE3; overflow: hidden"><span style="display: block; width: 58%; height: 100%; background: {{accent}}"></span></span>
+    </div>
+  </section>
+
+  <div style="padding: 16px 16px 8px; display: flex; justify-content: space-between; align-items: baseline">
+    <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: .04em">JOURNAL</span>
+    <a href="#" style="font-size: 13px; text-decoration: none">Tout voir</a>
+  </div>
+  <section style="margin: 0 16px; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; border: 1px solid #D5DBE3; background: #FFFFFF">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #59636F">10.06.26</span>
+      <span style="font-size: 14px; min-width: 0">Balais d'essuie-glace</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">29,90 €</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; border: 1px solid #D5DBE3; background: #FFFFFF">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #59636F">21.10.25</span>
+      <span style="font-size: 14px; min-width: 0">Vidange + filtre à huile</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">189,00 €</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; border: 1px solid #D5DBE3; background: #FFFFFF">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #59636F">07.11.24</span>
+      <span style="font-size: 14px; min-width: 0">Purge liquide de frein</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">69,00 €</span>
+    </div>
+  </section>
+
+  <div style="margin-top: auto; padding: 12px 16px 16px; display: flex; gap: 10px; border-top: 1px solid #D5DBE3; background: #FFFFFF">
+    <button type="button" style="flex-grow: 1; height: 50px; border-radius: 12px; border: 1px solid #D5DBE3; background: #FFFFFF; font-weight: 600">Relever le km</button>
+    <button type="button" style="flex-grow: 1; height: 50px; border-radius: 12px; border: 0; background: {{accent}}; color: #FFFFFF; font-weight: 700">+ Intervention</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#0B7398","options":["#0B7398","#2F5BD3","#2E7D4F","#131820"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#0B7398' };
+  }
+}
+</script>
+</body>
+</html>

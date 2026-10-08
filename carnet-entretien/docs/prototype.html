@@ -1,0 +1,996 @@
+<title>Carnet d'entretien</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=Saira:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout : « Cockpit » clair — barre haute, fiche véhicule à gauche (témoins + compteur en arc), onglets Échéances (jauges circulaires) / Journal / Plan à droite ; une colonne sous 860px */
+:root {
+  --paper: #EEF1F4;
+  --sheet: #FFFFFF;
+  --ink: #131820;
+  --muted: #59636F;
+  --line: #D5DBE3;
+  --line-strong: #B7C0CC;
+  --track: #E3E8EE;
+  --stamp: #0B7398;          /* accent (rétro-éclairage) */
+  --stamp-ink: #FFFFFF;
+  --stamp-soft: #E0F0F5;
+  --ok: #0B7398;
+  --ok-soft: #E0F0F5;
+  --warn: #B06A00;
+  --warn-soft: #FFF1DA;
+  --warn-halo: rgba(176, 106, 0, .14);
+  --late: #C7372B;
+  --late-soft: #FCE6E3;
+  --late-halo: rgba(199, 55, 43, .16);
+  --late-border: #F0B8B1;
+  --lamp-off: #A6AFBB;
+  --scrim: rgba(12, 18, 28, .45);
+  --plate-band: #1B3FA0;
+  --odo-bg: #131820;
+  --odo-ink: #F2F4F7;
+  --font-display: "Saira Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Saira", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 14px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111419; --sheet: #1A1F27; --ink: #E8EBF0; --muted: #A0A9B8; --line: #2A313C; --line-strong: #3A4352; --track: #2A313C;
+    --stamp: #6FC3DF; --stamp-ink: #0B0D11; --stamp-soft: #16313B; --ok: #6FC3DF; --ok-soft: #16313B;
+    --warn: #F2A93B; --warn-soft: #3A2A10; --warn-halo: rgba(242, 169, 59, .28);
+    --late: #F26B5E; --late-soft: #3A1714; --late-halo: rgba(242, 107, 94, .32); --late-border: #5A2621;
+    --lamp-off: #4A5363; --scrim: rgba(0, 0, 0, .6); --odo-bg: #0B0D11;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111419; --sheet: #1A1F27; --ink: #E8EBF0; --muted: #A0A9B8; --line: #2A313C; --line-strong: #3A4352; --track: #2A313C;
+  --stamp: #6FC3DF; --stamp-ink: #0B0D11; --stamp-soft: #16313B; --ok: #6FC3DF; --ok-soft: #16313B;
+  --warn: #F2A93B; --warn-soft: #3A2A10; --warn-halo: rgba(242, 169, 59, .28);
+  --late: #F26B5E; --late-soft: #3A1714; --late-halo: rgba(242, 107, 94, .32); --late-border: #5A2621;
+  --lamp-off: #4A5363; --scrim: rgba(0, 0, 0, .6); --odo-bg: #0B0D11;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--sheet); border-bottom: 1px solid var(--line); }
+.topbar-in { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 23px; letter-spacing: .03em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.brand svg { color: var(--stamp); }
+.veh-switch { display: flex; gap: 6px; flex-wrap: wrap; }
+.veh-tab { border: 1px solid var(--line); background: var(--sheet); border-radius: 10px; padding: 6px 12px; cursor: pointer; font-size: 14px; display: flex; gap: 8px; align-items: center; min-height: 40px; }
+.veh-tab[aria-pressed="true"] { border-color: var(--stamp); background: var(--stamp-soft); color: var(--ink); font-weight: 600; }
+.veh-tab .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+.veh-tab .dot.soon { background: var(--warn); }
+.veh-tab .dot.overdue { background: var(--late); }
+
+.btn { border: 1px solid var(--line-strong); background: var(--sheet); border-radius: 10px; padding: 8px 14px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+.btn:hover { border-color: var(--stamp); }
+.btn.primary { background: var(--stamp); border-color: var(--stamp); color: var(--stamp-ink); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--ink); border-color: var(--line); }
+.btn.small { padding: 4px 10px; font-size: 13px; min-height: 34px; }
+.btn.danger { color: var(--late); }
+
+.notice { max-width: 1180px; margin: 12px auto 0; padding: 0 16px; }
+.notice p { margin: 0; font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.notice .tag { font-family: var(--font-display); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--stamp); border: 1px solid var(--stamp); border-radius: 4px; padding: 0 6px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--stamp); text-decoration: underline; cursor: pointer; font-size: 13px; }
+
+.layout { max-width: 1180px; margin: 0 auto; padding: 16px; padding-block: 16px 48px; display: grid; grid-template-columns: 350px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Fiche véhicule */
+.vcard { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 70px); }
+@media (max-width: 860px) { .vcard { position: static; } }
+.vhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.plate { font-family: var(--font-mono); font-size: 13px; letter-spacing: .04em; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
+.vname { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1.05; letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+.vsub { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+
+/* Témoins */
+.lamps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 12px 6px; border: 1px solid var(--line); border-radius: 12px; box-shadow: inset 0 -3px 0 var(--track); }
+.lamp { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); text-align: center; }
+.lamp i { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); color: var(--lamp-off); }
+.lamp.soon { color: var(--warn); font-weight: 600; }
+.lamp.soon i { background: var(--warn-soft); color: var(--warn); box-shadow: 0 0 0 5px var(--warn-halo); }
+.lamp.overdue { color: var(--late); font-weight: 600; }
+.lamp.overdue i { background: var(--late-soft); color: var(--late); box-shadow: 0 0 0 5px var(--late-halo); }
+
+/* Compteur en arc */
+.arc { position: relative; height: 178px; border: 1px solid var(--line); border-radius: 12px; box-shadow: inset 0 -3px 0 var(--track); overflow: hidden; }
+.arc svg { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: 280px; height: 150px; max-width: calc(100% - 24px); }
+.arc .trk { fill: none; stroke: var(--track); stroke-width: 14; stroke-linecap: round; }
+.arc .val { fill: none; stroke: var(--ok); stroke-width: 14; stroke-linecap: round; }
+.arc.soon .val { stroke: var(--warn); }
+.arc.overdue .val { stroke: var(--late); }
+.arc-mid { position: absolute; left: 0; right: 0; top: 70px; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 0 12px; text-align: center; }
+.arc-mid b { font-family: var(--font-mono); font-weight: 700; font-size: 30px; line-height: 1.15; }
+.arc-mid small { font-size: 11px; letter-spacing: .14em; color: var(--muted); }
+.arc-mid span { margin-top: 4px; font-size: 13px; color: var(--muted); }
+.arc.soon .arc-mid span { color: var(--warn); }
+.arc.overdue .arc-mid span { color: var(--late); }
+.arc-ends { position: absolute; left: 16px; right: 16px; bottom: 8px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.facts div { min-width: 0; background: var(--paper); border-radius: 10px; padding: 8px 10px; }
+.facts dt { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.facts dd { margin: 0; font-family: var(--font-mono); font-weight: 700; font-size: 14px; }
+.vactions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Panneau principal */
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+.summary { display: flex; gap: 8px; flex-wrap: wrap; padding: 16px 18px 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.chip.overdue { background: var(--late-soft); color: var(--late); }
+.chip.soon { background: var(--warn-soft); color: var(--warn); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.unknown { background: var(--paper); color: var(--muted); }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 12px 12px 0; overflow-x: auto; }
+.tab { border: 0; background: none; padding: 8px 12px 10px; cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--stamp); }
+.tabbody { padding: 14px 18px 20px; }
+
+/* Échéances : jauges circulaires */
+.rings { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.ring-tile { --c: var(--ok); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 6px 12px; align-items: center; }
+.ring-tile.soon { --c: var(--warn); }
+.ring-tile.overdue { --c: var(--late); border-color: var(--late-border); }
+.ring-tile.unknown { --c: var(--lamp-off); }
+.ring { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--track) 0); grid-row: span 2; }
+.ring b { width: 46px; height: 46px; border-radius: 50%; background: var(--sheet); display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--c); }
+.ring-tile h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.25; }
+.ring-tile .when { margin: 0; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.ring-tile.soon .when, .ring-tile.overdue .when { color: var(--c); }
+.ring-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+
+/* Journal */
+.book-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 0 0 4px; }
+.book-head p { margin: 0; color: var(--muted); font-size: 14px; }
+.entries { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; padding-top: 8px; }
+.entry { display: grid; grid-template-columns: 82px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+@media (max-width: 560px) { .entry { grid-template-columns: minmax(0, 1fr) auto; } .entry .jdate { grid-column: 1 / -1; } }
+.jdate { font-family: var(--font-mono); font-size: 12px; color: var(--muted); line-height: 1.35; }
+.entry h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.entry p { margin: 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.entry .cost { font-family: var(--font-mono); font-weight: 700; white-space: nowrap; }
+
+/* Plan d'entretien */
+.tablewrap { overflow-x: auto; margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 560px; }
+th { text-align: left; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line-strong); }
+td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.r, th.r { text-align: right; }
+.hint { font-size: 13px; color: var(--muted); margin: 12px 0 0; max-width: 65ch; }
+
+.empty { padding: 32px 8px; text-align: center; color: var(--muted); }
+
+/* Premier lancement */
+.ob { max-width: 640px; width: 100%; margin: 0 auto; padding: 22px; display: grid; gap: 16px; }
+.ob-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.ob-steps li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--paper); }
+.ob-steps b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; background: var(--sheet); border: 1px solid var(--line-strong); }
+.ob-steps li.cur { color: var(--ink); font-weight: 600; background: var(--stamp-soft); }
+.ob-steps li.cur b { background: var(--stamp); color: var(--stamp-ink); border-color: var(--stamp); }
+.ob-steps li.done b { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+.ob form { display: grid; gap: 12px; }
+.ob-lead { margin: 0; color: var(--muted); max-width: 60ch; }
+.ob-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ob-list label { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.ob-list input { width: 18px; height: 18px; accent-color: var(--stamp); flex-shrink: 0; }
+.ob-list span { display: flex; flex-direction: column; min-width: 0; }
+.ob-list small { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ob-base { display: grid; gap: 10px; }
+.ob-base fieldset { margin: 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px 12px; min-width: 0; }
+.ob-base legend { font-weight: 600; padding: 0 4px; }
+
+/* Tableau de bord */
+.board { grid-column: 1 / -1; display: grid; gap: 14px; min-width: 0; }
+.board-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.board-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: .03em; text-transform: uppercase; }
+.sec { margin: 8px 0 0; font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; }
+.fleet { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.fleet-card { text-align: left; cursor: pointer; background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 10px; box-shadow: inset 0 -3px 0 var(--track); }
+.fleet-card:hover { border-color: var(--stamp); }
+.fleet-card.overdue { border-color: var(--late-border); }
+.fleet-card.add { place-items: center; color: var(--stamp); font-weight: 600; border-style: dashed; box-shadow: none; min-height: 120px; }
+.fleet-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fleet-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: .02em; min-width: 0; }
+.fleet-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.fleet-next { color: var(--muted); min-width: 0; }
+.lamps.mini { padding: 8px 4px; box-shadow: none; background: var(--paper); border: 0; }
+.lamps.mini .lamp i { width: 32px; height: 32px; }
+.lamps.mini .lamp i svg { width: 18px; height: 18px; }
+.lamps.mini .lamp.soon i, .lamps.mini .lamp.overdue i { box-shadow: 0 0 0 3px var(--warn-halo); }
+.lamps.mini .lamp.overdue i { box-shadow: 0 0 0 3px var(--late-halo); }
+.lamps.mini .lamp.off i { background: var(--sheet); }
+.board .rings { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.board .ring-tile { background: var(--sheet); }
+.vtag { display: block; font-family: var(--font-mono); font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.allgood { background: var(--ok-soft); color: var(--ink); border-color: transparent; }
+.next-list { list-style: none; margin: 0; padding: 4px 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); }
+.next-list li { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.next-list li:last-child { border-bottom: 0; }
+.nl-when { font-size: 13px; color: var(--muted); }
+.nl-veh { font-size: 13px; color: var(--muted); }
+@media (max-width: 520px) { .next-list li { grid-template-columns: minmax(0, 1fr) auto; } .nl-when { grid-column: 1 / -1; } }
+
+/* Feuille modale */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 20; display: grid; place-items: center; padding: 16px; }
+.sheet { background: var(--sheet); border-radius: 12px; width: min(520px, 100%); max-height: calc(100% - 32px); overflow-y: auto; border: 1px solid var(--line); }
+.sheet header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px 8px; }
+.sheet h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 24px; }
+.sheet form { padding: 4px 18px 18px; display: grid; gap: 12px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: 13px; font-weight: 500; }
+.field input, .field select, .field textarea { border: 1px solid var(--line-strong); background: var(--paper); border-radius: 7px; padding: 8px 10px; width: 100%; }
+.field textarea { min-height: 64px; resize: vertical; }
+.field .help { font-size: 12px; color: var(--muted); }
+.formerr { color: var(--late); font-size: 14px; margin: 0; }
+.formactions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+@media (max-width: 520px) { .hide-sm { display: none; } }
+
+/* Notifications */
+.sheet.wide { width: min(880px, 100%); }
+.ngrid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; padding: 4px 18px 18px; }
+@media (max-width: 760px) { .ngrid { grid-template-columns: minmax(0, 1fr); } }
+.ngrid form { padding: 0; }
+.channel { border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; }
+.channel-head { display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+.channel-head h3 { margin: 0; font-size: 16px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.channel-head h3 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.switch input { width: 18px; height: 18px; accent-color: var(--stamp); }
+.devices { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.devices li { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 14px; padding: 6px 10px; background: var(--paper); border-radius: 6px; flex-wrap: wrap; }
+.devices li span { min-width: 0; overflow-wrap: anywhere; }
+.preview { display: grid; gap: 14px; align-content: start; }
+.preview-label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+.phone { background: var(--odo-bg); border-radius: 22px; padding: 18px 12px 22px; color: var(--odo-ink); }
+.phone-time { text-align: center; font-family: var(--font-display); font-size: 34px; font-weight: 500; margin-bottom: 12px; opacity: .9; }
+.pnotif { background: rgba(255, 255, 255, .12); border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.35; }
+.pnotif + .pnotif { margin-top: 8px; }
+.pnotif-head { display: flex; align-items: center; gap: 6px; font-size: 11px; opacity: .75; margin-bottom: 3px; }
+.pnotif-head i { width: 16px; height: 16px; border-radius: 4px; background: var(--plate-band); display: inline-block; }
+.pnotif b { display: block; font-size: 13px; }
+.mail { border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: 13px; background: var(--sheet); }
+.mail .subj { font-weight: 600; margin-bottom: 6px; }
+.mail ul { margin: 6px 0 0; padding-left: 18px; }
+.mail .late { color: var(--late); } .mail .soonc { color: var(--warn); }
+
+.toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--sheet); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 30; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: rise .2s ease-out; } @keyframes rise { from { transform: translate(-50%, 8px); opacity: 0; } } }
+</style>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
+      Carnet
+    </div>
+    <nav class="veh-switch" id="vehSwitch" aria-label="Véhicules"></nav>
+    <button class="btn" type="button" data-act="notif" aria-label="Notifications">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="hide-sm">Notifications</span>
+    </button>
+    <button class="btn primary" type="button" data-act="add-intervention" id="btnAdd">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Intervention
+    </button>
+  </div>
+</header>
+
+<div class="notice">
+  <p><span class="tag">Prototype MVP</span> Données d'exemple, enregistrées uniquement dans ce navigateur. <button class="linkbtn" type="button" data-act="reset">Recharger les exemples</button> · <button class="linkbtn" type="button" data-act="wipe">Tester le premier lancement</button></p>
+</div>
+
+<main class="layout" id="app"></main>
+<div id="modalRoot"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- Dates (chaînes AAAA-MM-JJ, calcul en UTC) ---------- */
+  const DAY = 86400000;
+  const toDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+  const toISO = (dt) => dt.toISOString().slice(0, 10);
+  const todayISO = () => { const n = new Date(); return toISO(new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()))); };
+  const addDays = (s, n) => toISO(new Date(toDate(s).getTime() + n * DAY));
+  const diffDays = (a, b) => Math.round((toDate(b) - toDate(a)) / DAY); // b - a
+  function addMonths(s, n) {
+    const d = toDate(s);
+    const y = d.getUTCFullYear(), m = d.getUTCMonth() + n, day = d.getUTCDate();
+    const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    return toISO(new Date(Date.UTC(y, m, Math.min(day, last))));
+  }
+  const fmtDate = (s) => toDate(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
+  const fmtKm = (n) => Math.round(n).toLocaleString("fr-FR") + " km";
+  const fmtEur = (c) => (c / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  /* ---------- Moteur d'échéances (référence pour src/shared/due-engine.ts) ---------- */
+  function currentKm(st, vehicleId) {
+    const r = st.readings.filter((x) => x.vehicleId === vehicleId);
+    return r.length ? Math.max(...r.map((x) => x.km)) : 0;
+  }
+  function avgKmPerDay(st, vehicleId, today) {
+    let r = st.readings.filter((x) => x.vehicleId === vehicleId).sort((a, b) => a.date.localeCompare(b.date) || a.km - b.km);
+    const recent = r.filter((x) => diffDays(x.date, today) <= 365);
+    if (recent.length >= 2) r = recent;
+    if (r.length < 2) return null;
+    const span = diffDays(r[0].date, r[r.length - 1].date);
+    if (span < 30) return null;
+    const v = (r[r.length - 1].km - r[0].km) / span;
+    return v > 0 ? v : null;
+  }
+  function lastDone(st, rule) {
+    const done = st.interventions.filter((i) => i.ruleId === rule.id).sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km)[0];
+    if (done) return { date: done.date, km: done.km };
+    if (rule.baselineDate) return { date: rule.baselineDate, km: rule.baselineKm ?? 0 };
+    return null;
+  }
+  function computeDue(st, rule, today) {
+    const last = lastDone(st, rule);
+    if (!last) return { status: "unknown", rule };
+    const km = currentKm(st, rule.vehicleId);
+    const avg = avgKmPerDay(st, rule.vehicleId, today);
+    const dueKm = rule.intervalKm ? last.km + rule.intervalKm : null;
+    const dueDate = rule.intervalMonths ? addMonths(last.date, rule.intervalMonths) : null;
+    const kmLeft = dueKm != null ? dueKm - km : null;
+    const daysLeft = dueDate ? diffDays(today, dueDate) : null;
+    const projectedDate = kmLeft != null && avg ? addDays(today, Math.max(0, Math.ceil(kmLeft / avg))) : null;
+    const candidates = [dueDate, projectedDate].filter(Boolean).sort();
+    const effectiveDate = candidates[0] ?? null;
+    const effDays = effectiveDate ? diffDays(today, effectiveDate) : null;
+    let status = "ok";
+    if ((kmLeft != null && kmLeft <= 0) || (daysLeft != null && daysLeft < 0)) status = "overdue";
+    else if ((kmLeft != null && kmLeft <= rule.warnKm) || (effDays != null && effDays <= rule.warnDays)) status = "soon";
+    const fracKm = rule.intervalKm ? (km - last.km) / rule.intervalKm : 0;
+    const fracT = rule.intervalMonths ? diffDays(last.date, today) / Math.max(1, diffDays(last.date, dueDate)) : 0;
+    return { status, rule, last, dueKm, dueDate, kmLeft, daysLeft, projectedDate, effectiveDate, effDays, progress: Math.max(0, Math.min(1, Math.max(fracKm, fracT))) };
+  }
+  const RANK = { overdue: 0, soon: 1, ok: 2, unknown: 3 };
+  function dueFor(st, vehicleId, today) {
+    return st.rules.filter((r) => r.vehicleId === vehicleId).map((r) => computeDue(st, r, today))
+      .sort((a, b) => RANK[a.status] - RANK[b.status] || (a.effDays ?? 1e9) - (b.effDays ?? 1e9));
+  }
+  function worst(list) { return list.reduce((w, d) => (RANK[d.status] < RANK[w] ? d.status : w), "ok"); }
+
+  /* ---------- Modèles de règles (valeurs indicatives) ---------- */
+  const CATEGORIES = ["Entretien", "Freinage", "Pneumatiques", "Distribution", "Contrôle technique", "Administratif", "Réparation", "Autre"];
+  const TEMPLATES = [
+    { label: "Vidange + filtre à huile", category: "Entretien", intervalKm: 15000, intervalMonths: 12 },
+    { label: "Contrôle technique", category: "Contrôle technique", intervalKm: null, intervalMonths: 24 },
+    { label: "Assurance (échéance)", category: "Administratif", intervalKm: null, intervalMonths: 12 },
+    { label: "Liquide de frein", category: "Freinage", intervalKm: null, intervalMonths: 24 },
+    { label: "Plaquettes de frein AV (contrôle)", category: "Freinage", intervalKm: 30000, intervalMonths: null },
+    { label: "Filtre à air", category: "Entretien", intervalKm: 30000, intervalMonths: 24 },
+    { label: "Filtre d'habitacle", category: "Entretien", intervalKm: 15000, intervalMonths: 12 },
+    { label: "Courroie de distribution", category: "Distribution", intervalKm: 150000, intervalMonths: 120 },
+    { label: "Recharge climatisation", category: "Entretien", intervalKm: null, intervalMonths: 24 },
+  ];
+
+  /* ---------- Données d'exemple, datées relativement à aujourd'hui ---------- */
+  function seed() {
+    const T = todayISO(), d = (n) => addDays(T, n);
+    const v1 = "v-308", v2 = "v-clio";
+    const R = (id, vehicleId, label, category, intervalKm, intervalMonths, extra = {}) => ({ id, vehicleId, label, category, intervalKm, intervalMonths, warnKm: 1500, warnDays: 30, baselineDate: null, baselineKm: null, ...extra });
+    return {
+      version: 1,
+      vehicles: [
+        { id: v1, plate: "GH-482-KT", make: "Peugeot", model: "308 SW", engine: "1.5 BlueHDi 130", year: 2019, fuel: "Diesel", purchaseDate: d(-2760) },
+        { id: v2, plate: "EK-207-PL", make: "Renault", model: "Clio IV", engine: "0.9 TCe 90", year: 2016, fuel: "Essence", purchaseDate: d(-1500) },
+      ],
+      readings: [
+        { id: uid(), vehicleId: v1, date: d(-371), km: 84200 },
+        { id: uid(), vehicleId: v1, date: d(-352), km: 85100 },
+        { id: uid(), vehicleId: v1, date: d(-180), km: 92900 },
+        { id: uid(), vehicleId: v1, date: d(-120), km: 94800 },
+        { id: uid(), vehicleId: v1, date: d(-6), km: 101350 },
+        { id: uid(), vehicleId: v2, date: d(-248), km: 112400 },
+        { id: uid(), vehicleId: v2, date: d(-219), km: 113000 },
+        { id: uid(), vehicleId: v2, date: d(-17), km: 118100 },
+      ],
+      rules: [
+        R("r1", v1, "Vidange + filtre à huile", "Entretien", 20000, 12),
+        R("r2", v1, "Contrôle technique", "Contrôle technique", null, 24),
+        R("r3", v1, "Plaquettes de frein AV (contrôle)", "Freinage", 30000, null),
+        R("r4", v1, "Liquide de frein", "Freinage", null, 24),
+        R("r5", v1, "Courroie de distribution", "Distribution", 175000, 120, { baselineDate: d(-2760), baselineKm: 12 }),
+        R("r6", v1, "Assurance (échéance)", "Administratif", null, 12, { baselineDate: d(-279), baselineKm: 0 }),
+        R("r7", v1, "Recharge climatisation", "Entretien", null, 24, { baselineDate: d(-400), baselineKm: 83000 }),
+        R("r8", v2, "Vidange + filtre à huile", "Entretien", 15000, 12),
+        R("r9", v2, "Contrôle technique", "Contrôle technique", null, 24),
+        R("r10", v2, "Assurance (échéance)", "Administratif", null, 12, { baselineDate: d(-357), baselineKm: 0 }),
+      ],
+      interventions: [
+        { id: uid(), vehicleId: v1, ruleId: "r1", category: "Entretien", title: "Vidange + filtre à huile", date: d(-352), km: 85100, costCents: 18900, garage: "Garage Delattre, Lomme", notes: "Huile 0W-20, 4,25 L" },
+        { id: uid(), vehicleId: v1, ruleId: "r2", category: "Contrôle technique", title: "Contrôle technique", date: d(-709), km: 64800, costCents: 7800, garage: "Autocontrôle des Flandres", notes: "Favorable, aucun défaut" },
+        { id: uid(), vehicleId: v1, ruleId: "r3", category: "Freinage", title: "Plaquettes de frein AV", date: d(-600), km: 70100, costCents: 14500, garage: "Garage Delattre, Lomme", notes: "" },
+        { id: uid(), vehicleId: v1, ruleId: "r4", category: "Freinage", title: "Purge liquide de frein", date: d(-700), km: 65900, costCents: 6900, garage: "Garage Delattre, Lomme", notes: "DOT 4" },
+        { id: uid(), vehicleId: v1, ruleId: null, category: "Autre", title: "Balais d'essuie-glace", date: d(-120), km: 94800, costCents: 2990, garage: "Fait soi-même", notes: "" },
+        { id: uid(), vehicleId: v2, ruleId: "r8", category: "Entretien", title: "Vidange + filtres huile et air", date: d(-219), km: 113000, costCents: 15900, garage: "Atelier Mécanique Wazemmes", notes: "" },
+        { id: uid(), vehicleId: v2, ruleId: "r9", category: "Contrôle technique", title: "Contrôle technique", date: d(-513), km: 104000, costCents: 7500, garage: "Autocontrôle des Flandres", notes: "Favorable" },
+      ],
+    };
+  }
+
+  /* ---------- État ---------- */
+  const KEY = "carnet-proto-v1";
+  let st;
+  try { st = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { st = null; }
+  if (!st || st.version !== 1) st = seed();
+  const defaultNotif = () => ({
+    hour: "07:30",
+    email: { enabled: true, address: "hugo@example.fr" },
+    push: { enabled: true, devices: [{ id: "d1", label: "Pixel 8 · Chrome", addedAt: addDays(todayISO(), -40), lastOk: addDays(todayISO(), -1) }] },
+    ntfy: { enabled: false, server: "https://ntfy.sh", topic: "carnet-" + Math.random().toString(36).slice(2, 10) },
+  });
+  if (!st.notif) st.notif = defaultNotif();
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* stockage indisponible : l'état reste en mémoire */ } };
+  let ui = { vehicleId: st.vehicles[0]?.id, tab: "due", view: "board", ob: null };
+  try { const t = localStorage.getItem(KEY + ":tab"); if (t) ui.tab = t; } catch {}
+
+  /* ---------- Rendu ---------- */
+  const $ = (s) => document.querySelector(s);
+  const vehicle = () => st.vehicles.find((v) => v.id === ui.vehicleId);
+
+  const ICONS = {
+    Freinage: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 9v3.5M12 15h.01"/><path d="M4.5 7.5a9 9 0 0 0 0 9M19.5 7.5a9 9 0 0 1 0 9"/></svg>',
+    Entretien: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h3l2-3h7l3 3h2.5l1.5-2"/><path d="M6 13v4h12v-4"/><path d="M10 10V8h3"/></svg>',
+    "Contrôle technique": '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14 2 2 4-4"/></svg>',
+    Administratif: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/></svg>',
+  };
+  const LAMPS = [["Freinage", "Freins"], ["Entretien", "Entretien"], ["Contrôle technique", "CT"], ["Administratif", "Assurance"]];
+  const STATUS_FR = { overdue: "en retard", soon: "à prévoir", ok: "à jour", unknown: "sans référence" };
+
+  // Témoins : pire statut (en retard / à prévoir) par catégorie, éteint sinon.
+  function lamps(list, mini) {
+    return `<div class="lamps${mini ? " mini" : ""}" role="list" aria-label="Témoins">${LAMPS.map(([cat, label]) => {
+      const hits = list.filter((d) => d.rule.category === cat && (d.status === "overdue" || d.status === "soon"));
+      const lit = hits.some((d) => d.status === "overdue") ? "overdue" : hits.length ? "soon" : "off";
+      return `<div class="lamp ${lit}" role="listitem" aria-label="${label} : ${lit === "off" ? "rien à signaler" : STATUS_FR[lit]}"><i>${ICONS[cat]}</i>${label}</div>`;
+    }).join("")}</div>`;
+  }
+
+  // Compteur en arc : progression vers la prochaine échéance au kilométrage.
+  function arcGauge(list, km, lastR) {
+    const kmDues = list.filter((d) => d.status !== "unknown" && d.dueKm != null);
+    const next = kmDues.filter((d) => d.kmLeft > 0).sort((a, b) => a.kmLeft - b.kmLeft)[0] ?? kmDues.sort((a, b) => a.kmLeft - b.kmLeft)[0];
+    let val = "", cls = "", line = "Aucune échéance au kilométrage", ends = "";
+    if (next) {
+      const p = Math.max(0, Math.min(1, (km - next.last.km) / Math.max(1, next.dueKm - next.last.km)));
+      const th = Math.PI * (1 - p), x = (150 + 120 * Math.cos(th)).toFixed(1), y = (140 - 120 * Math.sin(th)).toFixed(1);
+      if (p > 0.005) val = `<path class="val" d="M30 140 A120 120 0 0 1 ${x} ${y}"/>`;
+      cls = next.status;
+      line = next.kmLeft > 0 ? `${esc(next.rule.label)} à ${fmtKm(next.dueKm)} · ${fmtKm(next.kmLeft)}` : `${esc(next.rule.label)} : dépassé de ${fmtKm(-next.kmLeft)}`;
+      ends = `<div class="arc-ends"><span>${Math.round(next.last.km).toLocaleString("fr-FR")}</span><span>${Math.round(next.dueKm).toLocaleString("fr-FR")}</span></div>`;
+    }
+    return `<div class="arc ${cls}">
+      <svg viewBox="0 0 300 160" aria-hidden="true"><path class="trk" d="M30 140 A120 120 0 0 1 270 140"/>${val}</svg>
+      <div class="arc-mid"><b>${Math.round(km).toLocaleString("fr-FR")}</b><small>KM${lastR ? " · RELEVÉ LE " + toDate(lastR.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" }).toUpperCase() : ""}</small><span>${line}</span></div>
+      ${ends}
+    </div>`;
+  }
+
+  // Texte court d'une jauge : « 13 j · 3 750 km », « −1 250 km ».
+  function shortWhen(d) {
+    if (d.status === "unknown") return "sans référence";
+    const parts = [];
+    if (d.daysLeft != null) parts.push(d.daysLeft < 0 ? `retard ${-d.daysLeft} j` : d.daysLeft <= 60 ? `${d.daysLeft} j` : toDate(d.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit", timeZone: "UTC" }));
+    if (d.kmLeft != null) parts.push(d.kmLeft <= 0 ? `−${Math.round(-d.kmLeft).toLocaleString("fr-FR")} km` : fmtKm(d.kmLeft));
+    return parts.join(" · ");
+  }
+
+  function whenText(d) {
+    if (d.status === "unknown") return "Aucune référence : saisissez la dernière intervention.";
+    const parts = [];
+    if (d.kmLeft != null) parts.push(d.kmLeft <= 0 ? `<strong>dépassé de ${fmtKm(-d.kmLeft)}</strong>` : `dans ${fmtKm(d.kmLeft)}`);
+    if (d.daysLeft != null) parts.push(d.daysLeft < 0 ? `<strong>en retard de ${-d.daysLeft} j</strong>` : d.daysLeft <= 60 ? `<strong>dans ${d.daysLeft} j</strong>` : `le ${fmtDate(d.dueDate)}`);
+    if (d.projectedDate && d.kmLeft > 0 && (!d.dueDate || d.projectedDate < d.dueDate)) parts.push(`estimé vers le ${fmtDate(d.projectedDate)}`);
+    return parts.join(" · ");
+  }
+
+  function renderSwitch(today) {
+    if (!st.vehicles.length) { $("#vehSwitch").innerHTML = ""; return; }
+    $("#vehSwitch").innerHTML = `<button class="veh-tab" type="button" data-act="board" aria-pressed="${ui.view === "board"}">Bord</button>` + st.vehicles.map((v) => {
+      const w = worst(dueFor(st, v.id, today));
+      return `<button class="veh-tab" type="button" data-act="pick" data-id="${v.id}" aria-pressed="${ui.view === "vehicle" && v.id === ui.vehicleId}"><span class="dot ${w}"></span>${esc(v.make)} ${esc(v.model)}</button>`;
+    }).join("") + `<button class="veh-tab" type="button" data-act="add-vehicle">+ Véhicule</button>`;
+  }
+
+  // Tuile d'échéance (jauge circulaire), partagée par le tableau de bord et la fiche véhicule.
+  function ringTile(d, vehicleTag) {
+    const pct = d.status === "unknown" ? 0 : Math.round(d.progress * 100);
+    return `
+        <li class="ring-tile ${d.status}">
+          <span class="ring" style="--p:${pct}" role="img" aria-label="${d.status === "unknown" ? "Sans référence" : pct + " % de l'intervalle consommé, " + STATUS_FR[d.status]}"><b>${d.status === "unknown" ? "?" : pct + "%"}</b></span>
+          <h3>${vehicleTag ? `<span class="vtag">${esc(vehicleTag)}</span>` : ""}${esc(d.rule.label)}</h3>
+          <p class="when" title="${whenText(d).replace(/<[^>]+>/g, "")}">${shortWhen(d)}</p>
+          <div class="ring-foot"><span>${d.last ? "Dernière : " + fmtDate(d.last.date) : "Saisissez la dernière intervention"}</span>
+            <button class="btn small ${d.status === "overdue" || d.status === "soon" ? "primary" : ""}" type="button" data-act="done" data-rule="${d.rule.id}">Fait</button></div>
+        </li>`;
+  }
+
+  // Tableau de bord : toute la flotte, échéances urgentes, puis la suite.
+  function renderBoard(today) {
+    const all = st.vehicles.flatMap((v) => dueFor(st, v.id, today).map((d) => ({ ...d, v })));
+    const urgent = all.filter((d) => d.status === "overdue" || d.status === "soon")
+      .sort((a, b) => RANK[a.status] - RANK[b.status] || (a.effDays ?? 1e9) - (b.effDays ?? 1e9));
+    const later = all.filter((d) => d.status === "ok").sort((a, b) => (a.effDays ?? 1e9) - (b.effDays ?? 1e9)).slice(0, 5);
+    const unknown = all.filter((d) => d.status === "unknown");
+    const n = (s) => all.filter((d) => d.status === s).length;
+    const fleet = st.vehicles.map((v) => {
+      const list = dueFor(st, v.id, today), w = worst(list), km = currentKm(st, v.id);
+      const nxt = list.find((d) => d.status !== "unknown");
+      return `<button type="button" class="fleet-card ${w}" data-act="pick" data-id="${v.id}">
+          <span class="fleet-top"><span class="fleet-name">${esc(v.make)} ${esc(v.model)}</span><span class="plate">${esc(v.plate)}</span></span>
+          ${lamps(list, true)}
+          <span class="fleet-foot"><span class="num">${fmtKm(km)}</span><span class="fleet-next">${nxt ? `${esc(nxt.rule.label)} · ${shortWhen(nxt)}` : "Aucune échéance"}</span></span>
+        </button>`;
+    }).join("");
+    $("#app").innerHTML = `
+      <section class="board">
+        <div class="board-head">
+          <div><h1 class="board-title">Tableau de bord</h1><p class="vsub">${fmtDate(today)} · ${st.vehicles.length} véhicule${st.vehicles.length > 1 ? "s" : ""}</p></div>
+          <div class="summary" style="padding:0">
+            ${n("overdue") ? `<span class="chip overdue">${n("overdue")} en retard</span>` : ""}
+            ${n("soon") ? `<span class="chip soon">${n("soon")} à prévoir</span>` : ""}
+            <span class="chip ok">${n("ok")} à jour</span>
+            ${unknown.length ? `<span class="chip unknown">${unknown.length} sans référence</span>` : ""}
+          </div>
+        </div>
+        <div class="fleet">${fleet}<button type="button" class="fleet-card add" data-act="add-vehicle"><span>+ Ajouter un véhicule</span></button></div>
+        <h2 class="sec">À faire</h2>
+        ${urgent.length ? `<ul class="rings">${urgent.map((d) => ringTile(d, d.v.model)).join("")}</ul>`
+          : `<div class="panel empty allgood"><strong>Tout est à jour.</strong><br>Aucune échéance dans les 30 prochains jours ou 1 500 km.</div>`}
+        ${unknown.length ? `<p class="hint">${unknown.length} opération${unknown.length > 1 ? "s" : ""} sans référence : saisissez la date de la dernière intervention dans le plan d'entretien du véhicule concerné.</p>` : ""}
+        ${later.length ? `<h2 class="sec">Ensuite</h2><ol class="next-list">${later.map((d) => `
+          <li><span class="num nl-when">${shortWhen(d)}</span><span class="nl-what">${esc(d.rule.label)}</span><span class="nl-veh">${esc(d.v.model)}</span></li>`).join("")}</ol>` : ""}
+      </section>`;
+  }
+
+
+  function render() {
+    const today = todayISO();
+    renderSwitch(today);
+    if (!st.vehicles.length) { renderOnboarding(); return; }
+    if (ui.view === "board" || !vehicle()) { ui.view = "board"; renderBoard(today); return; }
+    const v = vehicle();
+    const km = currentKm(st, v.id), avg = avgKmPerDay(st, v.id, today);
+    const lastR = st.readings.filter((r) => r.vehicleId === v.id).sort((a, b) => b.date.localeCompare(a.date))[0];
+    const spent12 = st.interventions.filter((i) => i.vehicleId === v.id && diffDays(i.date, today) <= 365).reduce((s, i) => s + i.costCents, 0);
+    const list = dueFor(st, v.id, today);
+    const count = (s) => list.filter((d) => d.status === s).length;
+
+    const vcard = `
+      <aside class="vcard">
+        <div class="vhead">
+          <div style="min-width:0"><h1 class="vname">${esc(v.make)} ${esc(v.model)}</h1><p class="vsub">${esc(v.engine)} · ${v.year} · ${esc(v.fuel)}</p></div>
+          <span class="plate" aria-label="Immatriculation ${esc(v.plate)}">${esc(v.plate)}</span>
+        </div>
+        ${lamps(list)}
+        ${arcGauge(list, km, lastR)}
+        <dl class="facts">
+          <div><dt>Rythme</dt><dd>${avg ? Math.round(avg * 30.44).toLocaleString("fr-FR") : "—"}<span style="font-weight:500;font-size:11px"> km/mois</span></dd></div>
+          <div><dt>12 mois</dt><dd>${fmtEur(spent12)}</dd></div>
+          <div><dt>Journal</dt><dd>${st.interventions.filter((i) => i.vehicleId === v.id).length}<span style="font-weight:500;font-size:11px"> entrées</span></dd></div>
+        </dl>
+        <div class="vactions">
+          <button class="btn small" type="button" data-act="add-reading">Relever le kilométrage</button>
+          <button class="btn small ghost danger" type="button" data-act="del-vehicle">Supprimer</button>
+        </div>
+      </aside>`;
+
+    const tabs = [["due", "Échéances"], ["book", "Journal"], ["plan", "Plan d'entretien"]];
+    let body = "";
+    if (ui.tab === "due") {
+      body = list.length ? `<ul class="rings">${list.map((d) => ringTile(d)).join("")}</ul>`
+        : `<div class="empty">Aucune règle d'entretien pour ce véhicule.<br><br><button class="btn" type="button" data-act="tab" data-tab="plan">Configurer le plan d'entretien</button></div>`;
+    } else if (ui.tab === "book") {
+      const ints = st.interventions.filter((i) => i.vehicleId === v.id).sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km);
+      const total = ints.reduce((s, i) => s + i.costCents, 0);
+      body = `<div class="book-head"><p>${ints.length} intervention${ints.length > 1 ? "s" : ""} · total <span class="num">${fmtEur(total)}</span></p><button class="btn small" type="button" data-act="export">Exporter (CSV)</button></div>` +
+        (ints.length ? `<ol class="entries">${ints.map((i) => `
+          <li class="entry">
+            <span class="jdate">${toDate(i.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit", timeZone: "UTC" }).replace(/\//g, ".")}<br>${Math.round(i.km).toLocaleString("fr-FR")} km</span>
+            <div style="min-width:0"><h3>${esc(i.title)}</h3><p>${esc(i.category)} · ${esc(i.garage || "Garage non renseigné")}${i.notes ? " · " + esc(i.notes) : ""}</p></div>
+            <div style="display:grid;gap:4px;justify-items:end"><span class="cost">${fmtEur(i.costCents)}</span><button class="btn small ghost danger" type="button" data-act="del-intervention" data-id="${i.id}" aria-label="Supprimer ${esc(i.title)}">Supprimer</button></div>
+          </li>`).join("")}</ol>` : `<div class="empty">Le journal est vide. Ajoutez la première intervention avec le bouton « Intervention ».</div>`);
+    } else {
+      const rules = st.rules.filter((r) => r.vehicleId === v.id);
+      body = `<div class="book-head"><p>Intervalles déclenchant les rappels. Le premier seuil atteint (km ou durée) fait foi.</p><button class="btn small primary" type="button" data-act="add-rule">Ajouter une règle</button></div>
+        <div class="tablewrap"><table><thead><tr><th>Opération</th><th>Catégorie</th><th class="r">Tous les</th><th class="r">Ou tous les</th><th class="r">Alerte</th><th></th></tr></thead><tbody>
+        ${rules.map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.category)}</td><td class="r num">${r.intervalKm ? fmtKm(r.intervalKm) : "—"}</td><td class="r num">${r.intervalMonths ? r.intervalMonths + " mois" : "—"}</td><td class="r num">${r.warnKm.toLocaleString("fr-FR")} km / ${r.warnDays} j</td><td class="r"><button class="btn small ghost danger" type="button" data-act="del-rule" data-id="${r.id}" aria-label="Supprimer ${esc(r.label)}">Retirer</button></td></tr>`).join("") || `<tr><td colspan="6" class="empty">Aucune règle.</td></tr>`}
+        </tbody></table></div>
+        <p class="hint">Les modèles proposés sont des valeurs indicatives. Reportez les intervalles du carnet constructeur de votre véhicule (V2 : plans constructeur pré-chargés).</p>`;
+    }
+
+    $("#app").innerHTML = vcard + `
+      <section class="panel">
+        <div class="summary">
+          ${count("overdue") ? `<span class="chip overdue">${count("overdue")} en retard</span>` : ""}
+          ${count("soon") ? `<span class="chip soon">${count("soon")} à prévoir</span>` : ""}
+          <span class="chip ok">${count("ok")} à jour</span>
+          ${count("unknown") ? `<span class="chip unknown">${count("unknown")} sans référence</span>` : ""}
+        </div>
+        <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab" role="tab" type="button" aria-selected="${ui.tab === k}" data-act="tab" data-tab="${k}">${l}</button>`).join("")}</div>
+        <div class="tabbody" role="tabpanel">${body}</div>
+      </section>`;
+  }
+
+  /* ---------- Premier lancement (référence pour features/onboarding) ---------- */
+  // Étape 1 : véhicule + km actuel ; étape 2 : opérations à suivre ; étape 3 : dernière fois pour chacune.
+  function renderOnboarding() {
+    const today = todayISO();
+    if (!ui.ob) ui.ob = { step: 1, v: { plate: "", make: "", model: "", engine: "", year: "", fuel: "Diesel", km: "" }, sel: [0, 1, 2, 3], base: {} };
+    const ob = ui.ob, steps = ["Véhicule", "Plan d'entretien", "Dernières interventions"];
+    const stepper = `<ol class="ob-steps">${steps.map((l, i) => `<li class="${i + 1 === ob.step ? "cur" : i + 1 < ob.step ? "done" : ""}"><b>${i + 1}</b>${l}</li>`).join("")}</ol>`;
+    let body = "";
+    if (ob.step === 1) {
+      const v = ob.v;
+      body = `<p class="ob-lead">Commencez par le véhicule. Le kilométrage actuel sert de point de départ au calcul des échéances.</p>` +
+        field("oPlate", "Immatriculation", `<input id="oPlate" name="plate" required maxlength="12" placeholder="AB-123-CD" autocomplete="off" value="${esc(v.plate)}">`, "Format SIV : AB-123-CD") +
+        `<div class="row2">${field("oMake", "Marque", `<input id="oMake" name="make" required maxlength="40" value="${esc(v.make)}">`)}${field("oModel", "Modèle", `<input id="oModel" name="model" required maxlength="60" value="${esc(v.model)}">`)}</div>` +
+        `<div class="row2">${field("oEngine", "Motorisation", `<input id="oEngine" name="engine" maxlength="60" placeholder="1.2 PureTech 110" value="${esc(v.engine)}">`)}${field("oYear", "Année", `<input id="oYear" name="year" type="number" min="1950" max="${toDate(today).getUTCFullYear() + 1}" required value="${esc(v.year)}">`)}</div>` +
+        `<div class="row2">${field("oFuel", "Énergie", `<select id="oFuel" name="fuel">${["Essence", "Diesel", "Hybride", "Électrique", "GPL"].map((f) => `<option ${f === v.fuel ? "selected" : ""}>${f}</option>`).join("")}</select>`)}${field("oKm", "Kilométrage actuel", `<input id="oKm" name="km" type="number" min="0" max="2000000" step="1" required value="${esc(v.km)}">`)}</div>`;
+    } else if (ob.step === 2) {
+      body = `<p class="ob-lead">Cochez les opérations à suivre. Les intervalles sont indicatifs : vous pourrez les aligner sur le carnet constructeur ensuite.</p>
+        <ul class="ob-list">${TEMPLATES.map((t, i) => `<li><label><input type="checkbox" name="sel" value="${i}" ${ob.sel.includes(i) ? "checked" : ""}>
+          <span><strong>${esc(t.label)}</strong><small>${[t.intervalKm ? fmtKm(t.intervalKm) : "", t.intervalMonths ? t.intervalMonths + " mois" : ""].filter(Boolean).join(" ou ")}</small></span></label></li>`).join("")}</ul>`;
+    } else {
+      body = `<p class="ob-lead">Quand ces opérations ont-elles été faites pour la dernière fois ? Laissez vide si vous ne savez pas : l'opération restera « sans référence » jusqu'à la prochaine saisie.</p>
+        <div class="ob-base">${ob.sel.map((i) => { const t = TEMPLATES[i], b = ob.base[i] ?? {}; return `
+          <fieldset><legend>${esc(t.label)}</legend><div class="row2">
+            ${field(`oD${i}`, "Date", `<input id="oD${i}" name="d${i}" type="date" max="${today}" value="${esc(b.date ?? "")}">`)}
+            ${t.intervalKm ? field(`oK${i}`, "Kilométrage", `<input id="oK${i}" name="k${i}" type="number" min="0" max="${esc(ob.v.km)}" step="1" value="${esc(b.km ?? "")}">`) : `<div class="field"><span class="help" style="padding-top:26px">Échéance calendaire uniquement</span></div>`}
+          </div></fieldset>`; }).join("")}</div>`;
+    }
+    $("#app").innerHTML = `<section class="board"><div class="panel ob">
+        <h1 class="board-title">Bienvenue</h1>
+        ${stepper}
+        <form id="obForm" novalidate>${body}<p class="formerr" id="obErr" hidden></p>
+          <div class="formactions">${ob.step > 1 ? `<button class="btn" type="button" data-act="ob-back">Retour</button>` : ""}<button class="btn primary" type="submit">${ob.step < 3 ? "Continuer" : "Créer mon carnet"}</button></div>
+        </form></div></section>`;
+    $("#obForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target), d = Object.fromEntries(fd.entries());
+      const err = (() => {
+        if (ob.step === 1) {
+          const plate = d.plate.trim().toUpperCase().replace(/\s+/g, "-");
+          if (!/^[A-Z]{2}-?\d{3}-?[A-Z]{2}$/.test(plate)) return "Immatriculation invalide (format AB-123-CD).";
+          if (!d.make.trim() || !d.model.trim()) return "Marque et modèle sont obligatoires.";
+          if (!Number.isInteger(Number(d.year)) || !d.year) return "Année invalide.";
+          if (d.km === "" || !Number.isInteger(Number(d.km)) || Number(d.km) < 0) return "Le kilométrage doit être un entier positif.";
+          ob.v = { ...d, plate: plate.replace(/-/g, "").replace(/^(..)(...)(..)$/, "$1-$2-$3") };
+        } else if (ob.step === 2) {
+          ob.sel = fd.getAll("sel").map(Number);
+          if (!ob.sel.length) return "Cochez au moins une opération, sinon aucun rappel ne sera calculé.";
+        } else {
+          for (const i of ob.sel) {
+            const date = d[`d${i}`] || "", km = d[`k${i}`] ?? "";
+            if (date && date > today) return `${TEMPLATES[i].label} : la date ne peut pas être dans le futur.`;
+            if (km !== "" && !date) return `${TEMPLATES[i].label} : indiquez aussi la date.`;
+            if (date && km === "" && TEMPLATES[i].intervalKm) return `${TEMPLATES[i].label} : indiquez aussi le kilométrage, même approximatif.`;
+            if (km !== "" && (!Number.isInteger(Number(km)) || Number(km) < 0 || Number(km) > Number(ob.v.km))) return `${TEMPLATES[i].label} : le kilométrage doit être compris entre 0 et ${fmtKm(Number(ob.v.km))}.`;
+            ob.base[i] = { date, km };
+          }
+          finishOnboarding(today);
+          return null;
+        }
+        ob.step += 1;
+        return null;
+      })();
+      if (err) { const p = $("#obErr"); p.textContent = err; p.hidden = false; return; }
+      render();
+    });
+  }
+
+  function finishOnboarding(today) {
+    const ob = ui.ob, id = "v-" + uid(), v = ob.v;
+    st.vehicles.push({ id, plate: v.plate, make: v.make.trim(), model: v.model.trim(), engine: v.engine.trim(), year: Number(v.year), fuel: v.fuel, purchaseDate: today });
+    st.readings.push({ id: uid(), vehicleId: id, date: today, km: Number(v.km) });
+    ob.sel.forEach((i) => {
+      const t = TEMPLATES[i], b = ob.base[i] ?? {};
+      st.rules.push({ id: "r-" + uid(), vehicleId: id, label: t.label, category: t.category, intervalKm: t.intervalKm, intervalMonths: t.intervalMonths, warnKm: 1500, warnDays: 30,
+        baselineDate: b.date || null, baselineKm: b.date ? (t.intervalKm ? Number(b.km) : 0) : null });
+    });
+    ui.ob = null; ui.vehicleId = id; ui.view = "board";
+    save(); toast("Carnet créé");
+  }
+
+  /* ---------- Modales ---------- */
+  function openModal(title, fieldsHtml, onSubmit) {
+    $("#modalRoot").innerHTML = `<div class="scrim" data-act="close-scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+      <header><h2 id="mTitle">${title}</h2><button class="btn ghost small" type="button" data-act="close" aria-label="Fermer">Fermer</button></header>
+      <form id="mForm" novalidate>${fieldsHtml}<p class="formerr" id="mErr" hidden></p>
+      <div class="formactions"><button class="btn" type="button" data-act="close">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div></form></div></div>`;
+    const form = $("#mForm");
+    form.querySelector("input,select")?.focus();
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      const err = onSubmit(data, form);
+      if (err) { const p = $("#mErr"); p.textContent = err; p.hidden = false; return; }
+      closeModal(); save(); render();
+    });
+  }
+  const closeModal = () => { $("#modalRoot").innerHTML = ""; };
+  const field = (id, label, input, help = "") => `<div class="field"><label for="${id}">${label}</label>${input}${help ? `<span class="help">${help}</span>` : ""}</div>`;
+
+  function checkKm(vehicleId, date, km) {
+    const r = st.readings.filter((x) => x.vehicleId === vehicleId);
+    const before = r.filter((x) => x.date <= date).reduce((m, x) => Math.max(m, x.km), 0);
+    const after = r.filter((x) => x.date > date).reduce((m, x) => Math.min(m, x.km), Infinity);
+    if (km < before) return `Kilométrage incohérent : ${fmtKm(before)} déjà relevé à cette date ou avant.`;
+    if (km > after) return `Kilométrage incohérent : un relevé postérieur indique ${fmtKm(after)}.`;
+    return null;
+  }
+
+  function interventionForm(ruleId) {
+    const v = vehicle(); if (!v) return;
+    const today = todayISO();
+    const rules = st.rules.filter((r) => r.vehicleId === v.id);
+    const pre = rules.find((r) => r.id === ruleId);
+    openModal(`Intervention · ${esc(v.plate)}`,
+      field("fRule", "Opération du plan", `<select id="fRule" name="ruleId"><option value="">Hors plan (ponctuelle)</option>${rules.map((r) => `<option value="${r.id}" ${r.id === ruleId ? "selected" : ""}>${esc(r.label)}</option>`).join("")}</select>`, "Lier au plan remet l'échéance à zéro.") +
+      field("fTitle", "Libellé", `<input id="fTitle" name="title" required maxlength="120" value="${esc(pre?.label ?? "")}">`) +
+      field("fCat", "Catégorie", `<select id="fCat" name="category">${CATEGORIES.map((c) => `<option ${c === (pre?.category ?? "Entretien") ? "selected" : ""}>${c}</option>`).join("")}</select>`) +
+      `<div class="row2">${field("fDate", "Date", `<input id="fDate" name="date" type="date" required max="${today}" value="${today}">`)}${field("fKm", "Kilométrage", `<input id="fKm" name="km" type="number" inputmode="numeric" min="0" max="2000000" step="1" required value="${currentKm(st, v.id)}">`)}</div>` +
+      `<div class="row2">${field("fCost", "Coût TTC (€)", `<input id="fCost" name="cost" type="number" inputmode="decimal" min="0" max="100000" step="0.01" value="0">`)}${field("fGarage", "Garage", `<input id="fGarage" name="garage" maxlength="120" placeholder="Nom, ville">`)}</div>` +
+      field("fNotes", "Notes", `<textarea id="fNotes" name="notes" maxlength="2000" placeholder="Références pièces, remarques…"></textarea>`),
+      (d) => {
+        const km = Number(d.km), cost = Number(d.cost || 0);
+        if (!d.title.trim()) return "Le libellé est obligatoire.";
+        if (!d.date || d.date > today) return "La date ne peut pas être dans le futur.";
+        if (!Number.isInteger(km) || km < 0) return "Le kilométrage doit être un entier positif.";
+        if (!(cost >= 0)) return "Le coût doit être positif.";
+        const e = checkKm(v.id, d.date, km); if (e) return e;
+        st.interventions.push({ id: uid(), vehicleId: v.id, ruleId: d.ruleId || null, category: d.category, title: d.title.trim(), date: d.date, km, costCents: Math.round(cost * 100), garage: d.garage.trim(), notes: d.notes.trim() });
+        st.readings.push({ id: uid(), vehicleId: v.id, date: d.date, km });
+        toast("Intervention ajoutée au carnet");
+      });
+    const sel = $("#fRule");
+    sel.addEventListener("change", () => { const r = rules.find((x) => x.id === sel.value); if (r) { $("#fTitle").value = r.label; $("#fCat").value = r.category; } });
+  }
+
+  function readingForm() {
+    const v = vehicle(); if (!v) return;
+    const today = todayISO();
+    openModal("Relevé kilométrique",
+      `<div class="row2">${field("rDate", "Date", `<input id="rDate" name="date" type="date" required max="${today}" value="${today}">`)}${field("rKm", "Kilométrage", `<input id="rKm" name="km" type="number" inputmode="numeric" min="0" max="2000000" step="1" required value="${currentKm(st, v.id)}">`)}</div>` +
+      `<p class="hint" style="margin:0">Les relevés réguliers affinent l'estimation des échéances au kilométrage.</p>`,
+      (d) => {
+        const km = Number(d.km);
+        if (!d.date || d.date > today) return "La date ne peut pas être dans le futur.";
+        if (!Number.isInteger(km) || km < 0) return "Le kilométrage doit être un entier positif.";
+        const e = checkKm(v.id, d.date, km); if (e) return e;
+        st.readings.push({ id: uid(), vehicleId: v.id, date: d.date, km });
+        toast("Relevé enregistré");
+      });
+  }
+
+  function vehicleForm() {
+    const today = todayISO();
+    openModal("Nouveau véhicule",
+      field("vPlate", "Immatriculation", `<input id="vPlate" name="plate" required placeholder="AB-123-CD" maxlength="12" autocomplete="off">`, "Format SIV : AB-123-CD") +
+      `<div class="row2">${field("vMake", "Marque", `<input id="vMake" name="make" required maxlength="40">`)}${field("vModel", "Modèle", `<input id="vModel" name="model" required maxlength="60">`)}</div>` +
+      `<div class="row2">${field("vEngine", "Motorisation", `<input id="vEngine" name="engine" maxlength="60" placeholder="1.2 PureTech 110">`)}${field("vYear", "Année", `<input id="vYear" name="year" type="number" min="1950" max="${toDate(today).getUTCFullYear() + 1}" required>`)}</div>` +
+      `<div class="row2">${field("vFuel", "Énergie", `<select id="vFuel" name="fuel"><option>Essence</option><option>Diesel</option><option>Hybride</option><option>Électrique</option><option>GPL</option></select>`)}${field("vKm", "Kilométrage actuel", `<input id="vKm" name="km" type="number" min="0" max="2000000" step="1" required>`)}</div>` +
+      `<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="defaults" checked> Créer le plan d'entretien de base (vidange, CT, assurance, liquide de frein)</label>`,
+      (d) => {
+        const plate = d.plate.trim().toUpperCase().replace(/\s+/g, "-");
+        if (!/^[A-Z]{2}-?\d{3}-?[A-Z]{2}$/.test(plate)) return "Immatriculation invalide (format AB-123-CD).";
+        const norm = plate.replace(/-/g, "").replace(/^(..)(...)(..)$/, "$1-$2-$3");
+        if (st.vehicles.some((x) => x.plate === norm)) return "Ce véhicule existe déjà.";
+        if (!d.make.trim() || !d.model.trim()) return "Marque et modèle sont obligatoires.";
+        const km = Number(d.km), year = Number(d.year);
+        if (!Number.isInteger(km) || km < 0) return "Le kilométrage doit être un entier positif.";
+        if (!Number.isInteger(year)) return "Année invalide.";
+        const id = "v-" + uid();
+        st.vehicles.push({ id, plate: norm, make: d.make.trim(), model: d.model.trim(), engine: d.engine.trim(), year, fuel: d.fuel, purchaseDate: today });
+        st.readings.push({ id: uid(), vehicleId: id, date: today, km });
+        if (d.defaults) TEMPLATES.slice(0, 4).forEach((t) => st.rules.push({ id: "r-" + uid(), vehicleId: id, ...t, warnKm: 1500, warnDays: 30, baselineDate: null, baselineKm: null }));
+        ui.vehicleId = id; ui.tab = "due";
+        toast("Véhicule ajouté");
+      });
+  }
+
+  function ruleForm() {
+    const v = vehicle(); if (!v) return;
+    openModal("Règle d'entretien",
+      field("tTpl", "Partir d'un modèle", `<select id="tTpl"><option value="">Personnalisée</option>${TEMPLATES.map((t, i) => `<option value="${i}">${esc(t.label)}</option>`).join("")}</select>`, "Valeurs indicatives, à ajuster au carnet constructeur.") +
+      field("tLabel", "Opération", `<input id="tLabel" name="label" required maxlength="120">`) +
+      field("tCat", "Catégorie", `<select id="tCat" name="category">${CATEGORIES.map((c) => `<option>${c}</option>`).join("")}</select>`) +
+      `<div class="row2">${field("tKm", "Tous les (km)", `<input id="tKm" name="intervalKm" type="number" min="0" max="500000" step="500">`)}${field("tMonths", "Ou tous les (mois)", `<input id="tMonths" name="intervalMonths" type="number" min="0" max="240" step="1">`)}</div>` +
+      `<div class="row2">${field("tLastDate", "Dernière fois le", `<input id="tLastDate" name="baselineDate" type="date" max="${todayISO()}">`, "Facultatif si l'intervention est saisie au carnet.")}${field("tLastKm", "À (km)", `<input id="tLastKm" name="baselineKm" type="number" min="0" max="2000000" step="1">`)}</div>`,
+      (d) => {
+        const ik = d.intervalKm ? Number(d.intervalKm) : null, im = d.intervalMonths ? Number(d.intervalMonths) : null;
+        if (!d.label.trim()) return "Le nom de l'opération est obligatoire.";
+        if (!ik && !im) return "Indiquez au moins un intervalle (km ou mois).";
+        if ((ik != null && !(ik > 0)) || (im != null && !(Number.isInteger(im) && im > 0))) return "Les intervalles doivent être positifs.";
+        if (d.baselineKm && !d.baselineDate) return "Indiquez la date de la dernière intervention.";
+        st.rules.push({ id: "r-" + uid(), vehicleId: v.id, label: d.label.trim(), category: d.category, intervalKm: ik, intervalMonths: im, warnKm: 1500, warnDays: 30, baselineDate: d.baselineDate || null, baselineKm: d.baselineKm ? Number(d.baselineKm) : (d.baselineDate ? 0 : null) });
+        toast("Règle ajoutée");
+      });
+    const sel = $("#tTpl");
+    sel.addEventListener("change", () => { const t = TEMPLATES[sel.value]; if (!t) return; $("#tLabel").value = t.label; $("#tCat").value = t.category; $("#tKm").value = t.intervalKm ?? ""; $("#tMonths").value = t.intervalMonths ?? ""; });
+  }
+
+  function confirmModal(text, onYes) {
+    $("#modalRoot").innerHTML = `<div class="scrim" data-act="close-scrim"><div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="cTitle">
+      <header><h2 id="cTitle">Confirmer</h2></header><form id="cForm"><p style="margin:0">${text}</p>
+      <div class="formactions"><button class="btn" type="button" data-act="close">Annuler</button><button class="btn primary" type="submit">Supprimer</button></div></form></div></div>`;
+    $("#cForm").addEventListener("submit", (e) => { e.preventDefault(); onYes(); closeModal(); save(); render(); });
+  }
+
+  function exportCsv() {
+    const v = vehicle(); if (!v) return;
+    const rows = [["date", "km", "categorie", "intervention", "garage", "cout_eur", "notes"]].concat(
+      st.interventions.filter((i) => i.vehicleId === v.id).sort((a, b) => a.date.localeCompare(b.date)).map((i) => [i.date, i.km, i.category, i.title, i.garage, (i.costCents / 100).toFixed(2), i.notes]));
+    const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+    $("#modalRoot").innerHTML = `<div class="scrim" data-act="close-scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xTitle">
+      <header><h2 id="xTitle">Export CSV · ${esc(v.plate)}</h2><button class="btn ghost small" type="button" data-act="close">Fermer</button></header>
+      <form id="xForm"><div class="field"><label for="xCsv">Séparateur « ; », compatible Excel FR</label><textarea id="xCsv" readonly style="min-height:180px;font-family:var(--font-mono);font-size:12px">${esc(csv)}</textarea></div>
+      <div class="formactions"><button class="btn primary" type="submit">Copier</button></div></form></div></div>`;
+    $("#xForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const ta = $("#xCsv");
+      navigator.clipboard?.writeText(csv).then(() => toast("CSV copié"), () => { ta.select(); toast("Sélectionné : copiez avec Ctrl+C"); }) ?? (ta.select(), toast("Sélectionné : copiez avec Ctrl+C"));
+    });
+  }
+
+  /* ---------- Notifications (référence pour src/server/notifications) ---------- */
+  // Digest : même contenu pour tous les canaux, rendu différemment (email complet, push/ntfy court).
+  function buildDigest(today) {
+    const items = st.vehicles.flatMap((v) => dueFor(st, v.id, today).filter((d) => d.status === "overdue" || d.status === "soon").map((d) => ({ ...d, v })));
+    items.sort((a, b) => RANK[a.status] - RANK[b.status] || (a.effDays ?? 1e9) - (b.effDays ?? 1e9));
+    const late = items.filter((i) => i.status === "overdue").length, soon = items.length - late;
+    const parts = [];
+    if (late) parts.push(`${late} en retard`);
+    if (soon) parts.push(`${soon} à prévoir`);
+    const title = items.length ? `Entretien : ${parts.join(", ")}` : "Entretien : tout est à jour";
+    const short = (i) => `${i.v.model} · ${i.rule.label} — ${i.status === "overdue" ? "en retard" : (i.daysLeft != null && i.daysLeft <= 60 ? `dans ${i.daysLeft} j` : `dans ${fmtKm(i.kmLeft)}`)}`;
+    const body = items.slice(0, 3).map(short).join("\n") + (items.length > 3 ? `\n+ ${items.length - 3} autre${items.length > 4 ? "s" : ""}` : "");
+    return { items, title, body, short };
+  }
+
+  function notifPanel() {
+    const n = st.notif, today = todayISO(), dg = buildDigest(today);
+    const hours = ["06:30", "07:30", "08:30", "12:00", "18:30", "20:00"];
+    $("#modalRoot").innerHTML = `<div class="scrim" data-act="close-scrim"><div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="nTitle">
+      <header><h2 id="nTitle">Notifications</h2><button class="btn ghost small" type="button" data-act="close">Fermer</button></header>
+      <div class="ngrid">
+        <form id="nForm" novalidate style="display:grid;gap:12px">
+          ${field("nHour", "Rappel quotidien à", `<select id="nHour" name="hour">${hours.map((h) => `<option ${h === n.hour ? "selected" : ""}>${h}</option>`).join("")}</select>`, "Un seul envoi par échéance et par changement de statut (à prévoir, puis en retard).")}
+
+          <section class="channel" aria-labelledby="chMail">
+            <div class="channel-head"><h3 id="chMail">Email</h3>
+              <label class="switch"><input type="checkbox" name="emailEnabled" ${n.email.enabled ? "checked" : ""}> Activé</label></div>
+            ${field("nMail", "Adresse", `<input id="nMail" name="emailAddress" type="email" maxlength="254" value="${esc(n.email.address)}">`)}
+            <div><button class="btn small" type="button" data-act="ntest" data-ch="email">Envoyer un test</button></div>
+          </section>
+
+          <section class="channel" aria-labelledby="chPush">
+            <div class="channel-head"><h3 id="chPush">Téléphone <small>notifications de l'application</small></h3>
+              <label class="switch"><input type="checkbox" name="pushEnabled" ${n.push.enabled ? "checked" : ""}> Activé</label></div>
+            <ul class="devices">${n.push.devices.map((d) => `<li><span>${esc(d.label)} · ajouté le ${fmtDate(d.addedAt)}</span><button class="btn small ghost danger" type="button" data-act="ndev-del" data-id="${d.id}">Retirer</button></li>`).join("") || `<li><span>Aucun appareil</span></li>`}</ul>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small primary" type="button" data-act="ndev-add">Activer sur cet appareil</button><button class="btn small" type="button" data-act="ntest" data-ch="push">Envoyer un test</button></div>
+            <p class="help" style="margin:0;font-size:12px;color:var(--muted)">Android : Chrome, Edge ou Firefox. iPhone/iPad : ajoutez d'abord l'application à l'écran d'accueil (iOS 16.4 ou plus), puis activez depuis l'icône.</p>
+          </section>
+
+          <section class="channel" aria-labelledby="chNtfy">
+            <div class="channel-head"><h3 id="chNtfy">ntfy <small>appli ntfy ou serveur auto-hébergé</small></h3>
+              <label class="switch"><input type="checkbox" name="ntfyEnabled" ${n.ntfy.enabled ? "checked" : ""}> Activé</label></div>
+            <div class="row2">${field("nSrv", "Serveur", `<input id="nSrv" name="ntfyServer" maxlength="200" value="${esc(n.ntfy.server)}">`)}${field("nTopic", "Sujet", `<input id="nTopic" name="ntfyTopic" maxlength="64" value="${esc(n.ntfy.topic)}">`, "Gardez-le difficile à deviner.")}</div>
+            <div><button class="btn small" type="button" data-act="ntest" data-ch="ntfy">Envoyer un test</button></div>
+          </section>
+
+          <p class="formerr" id="nErr" hidden></p>
+          <div class="formactions"><button class="btn" type="button" data-act="close">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>
+        </form>
+
+        <aside class="preview" aria-label="Aperçu">
+          <div><p class="preview-label">Aperçu téléphone</p>
+            <div class="phone"><div class="phone-time">${esc(n.hour)}</div>
+              <div class="pnotif" id="pTest" hidden><div class="pnotif-head"><i></i>Carnet · maintenant</div><b>Notification de test</b>Les rappels d'entretien arriveront ici.</div>
+              <div class="pnotif"><div class="pnotif-head"><i></i>Carnet · ${esc(n.hour)}</div><b>${esc(dg.title)}</b>${esc(dg.body).replace(/\n/g, "<br>")}</div>
+            </div></div>
+          <div><p class="preview-label">Aperçu email</p>
+            <div class="mail"><div class="subj">${esc(dg.title)}</div>
+              ${dg.items.length ? `<ul>${dg.items.map((i) => `<li class="${i.status === "overdue" ? "late" : "soonc"}">${esc(i.v.make)} ${esc(i.v.model)} (${esc(i.v.plate)}) : ${esc(i.rule.label)}</li>`).join("")}</ul>` : "Aucune échéance proche."}
+              <p style="margin:8px 0 0;color:var(--muted)">Bouton « Ouvrir le carnet » · lien de désinscription</p></div></div>
+        </aside>
+      </div></div></div>`;
+
+    $("#nForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(e.target).entries());
+      const err = (() => {
+        if (d.emailEnabled && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.emailAddress)) return "Adresse email invalide.";
+        if (d.ntfyEnabled) {
+          let u; try { u = new URL(d.ntfyServer); } catch { return "Serveur ntfy invalide (ex. https://ntfy.sh)."; }
+          if (u.protocol !== "https:") return "Le serveur ntfy doit être en https.";
+          if (!/^[A-Za-z0-9_-]{8,64}$/.test(d.ntfyTopic)) return "Sujet ntfy : 8 à 64 caractères parmi lettres, chiffres, - et _.";
+        }
+        if (!d.emailEnabled && !d.pushEnabled && !d.ntfyEnabled) return "Activez au moins un canal, sinon aucun rappel ne sera envoyé.";
+        return null;
+      })();
+      if (err) { const p = $("#nErr"); p.textContent = err; p.hidden = false; return; }
+      n.hour = d.hour;
+      n.email = { enabled: !!d.emailEnabled, address: d.emailAddress.trim() };
+      n.push.enabled = !!d.pushEnabled;
+      n.ntfy = { enabled: !!d.ntfyEnabled, server: d.ntfyServer.trim().replace(/\/+$/, ""), topic: d.ntfyTopic.trim() };
+      save(); closeModal(); toast("Préférences de notification enregistrées");
+    });
+  }
+
+  function addDevice() {
+    // En production : Notification.requestPermission() puis pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })
+    // et POST /api/v1/notifications/channels { type: 'webpush', subscription }. Simulé ici (API indisponible dans l'aperçu).
+    const ua = navigator.userAgent;
+    const os = /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Mac/.test(ua) ? "macOS" : /Windows/.test(ua) ? "Windows" : "Linux";
+    const br = /Edg\//.test(ua) ? "Edge" : /Firefox/.test(ua) ? "Firefox" : /Chrome/.test(ua) ? "Chrome" : /Safari/.test(ua) ? "Safari" : "Navigateur";
+    st.notif.push.devices.push({ id: uid(), label: `${os} · ${br} (simulation)`, addedAt: todayISO(), lastOk: null });
+    st.notif.push.enabled = true;
+    save(); notifPanel(); toast("Appareil ajouté (simulation)");
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    document.querySelector(".toast")?.remove();
+    const t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg;
+    document.body.appendChild(t); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 2600);
+  }
+
+  /* ---------- Événements ---------- */
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-act]"); if (!el) return;
+    const act = el.dataset.act;
+    if (act === "close-scrim" && e.target !== el) return;
+    switch (act) {
+      case "pick": ui.vehicleId = el.dataset.id; ui.view = "vehicle"; render(); break;
+      case "board": ui.view = "board"; render(); break;
+      case "ob-back": if (ui.ob && ui.ob.step > 1) { ui.ob.step -= 1; render(); } break;
+      case "wipe": confirmModal("Effacer toutes les données de ce navigateur pour tester le premier lancement ? « Recharger les exemples » les restaure.", () => { st.vehicles = []; st.readings = []; st.rules = []; st.interventions = []; ui.ob = null; toast("Données effacées"); }); break;
+      case "tab": ui.tab = el.dataset.tab; try { localStorage.setItem(KEY + ":tab", ui.tab); } catch {} render(); break;
+      case "add-intervention": interventionForm(null); break;
+      case "done": { const r = st.rules.find((x) => x.id === el.dataset.rule); if (r) ui.vehicleId = r.vehicleId; interventionForm(el.dataset.rule); break; }
+      case "add-reading": readingForm(); break;
+      case "add-vehicle": vehicleForm(); break;
+      case "add-rule": ruleForm(); break;
+      case "export": exportCsv(); break;
+      case "notif": notifPanel(); break;
+      case "ndev-add": addDevice(); break;
+      case "ndev-del": st.notif.push.devices = st.notif.push.devices.filter((d) => d.id !== el.dataset.id); save(); notifPanel(); toast("Appareil retiré"); break;
+      case "ntest": {
+        const ch = el.dataset.ch;
+        if (ch === "push" && !st.notif.push.devices.length) { toast("Aucun appareil : activez d'abord cet appareil"); break; }
+        if (ch !== "email") { const p = $("#pTest"); if (p) p.hidden = false; }
+        toast({ email: `Email de test envoyé à ${st.notif.email.address} (simulation)`, push: `Test envoyé à ${st.notif.push.devices.length} appareil(s) (simulation)`, ntfy: `Test publié sur ${st.notif.ntfy.server}/${st.notif.ntfy.topic} (simulation)` }[ch]);
+        break;
+      }
+      case "close": case "close-scrim": closeModal(); break;
+      case "del-intervention": confirmModal("Supprimer cette intervention du carnet ? Le relevé kilométrique associé est conservé.", () => { st.interventions = st.interventions.filter((i) => i.id !== el.dataset.id); toast("Intervention supprimée"); }); break;
+      case "del-rule": confirmModal("Retirer cette règle du plan ? L'historique du carnet est conservé.", () => { const id = el.dataset.id; st.rules = st.rules.filter((r) => r.id !== id); st.interventions.forEach((i) => { if (i.ruleId === id) i.ruleId = null; }); toast("Règle retirée"); }); break;
+      case "del-vehicle": { const v = vehicle(); if (!v) break; confirmModal(`Supprimer ${esc(v.make)} ${esc(v.model)} (${esc(v.plate)}) et tout son carnet ? Cette action est définitive.`, () => { st.vehicles = st.vehicles.filter((x) => x.id !== v.id); ["readings", "rules", "interventions"].forEach((k) => { st[k] = st[k].filter((x) => x.vehicleId !== v.id); }); ui.vehicleId = st.vehicles[0]?.id; toast("Véhicule supprimé"); }); break; }
+      case "reset": st = seed(); st.notif = defaultNotif(); ui.ob = null; ui.view = "board"; ui.vehicleId = st.vehicles[0].id; save(); render(); toast("Exemples rechargés"); break;
+    }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("#modalRoot").innerHTML) closeModal(); });
+
+  render();
+})();
+</script>
