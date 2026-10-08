@@ -63,3 +63,13 @@ Format : ADR court. Ajouter une entrée pour toute décision non couverte par `A
 ## ADR-014 — Import CSV et pièces jointes avancés en M8
 - Décision : juste après la mise en service, avant V1.
 - Raison : sans historique ni factures, le carnet a peu de valeur au départ et à la revente ; ce sont les deux fonctions qui rendent l'outil utile dès le premier mois.
+
+## ADR-015 — Projet hébergé dans le sous-dossier `carnet-entretien/` du dépôt `privacy-policy`
+- Contexte : le kit a été appliqué dans le dépôt `privacy-policy`, dont le `README.md` racine est la politique de confidentialité publiée.
+- Décision : tout le projet vit dans `carnet-entretien/` ; la racine du dépôt n'est pas modifiée.
+- Conséquences : lancer Claude Code et les commandes `pnpm` depuis `carnet-entretien/` (hooks `.claude/` résolus via `CLAUDE_PROJECT_DIR`). Le workflow CI (M0-T2) se place obligatoirement dans `.github/workflows/` à la racine du dépôt avec `defaults.run.working-directory: carnet-entretien` et un filtre `paths: carnet-entretien/**`. Migration vers un dépôt dédié possible par `git subtree split --prefix=carnet-entretien`.
+
+## ADR-016 — Versions d'outillage M0-T1
+- Décision : Vite 6 + `@vitejs/plugin-react` 5 (la v6 du plugin exige Vite 8), React 18 et `@fastify/static` 8 (compatible Fastify 5) conformément à la stack figée.
+- Adresse d'écoute provisoire (avant `config.ts`, M0-T5) : `HOST` sinon `0.0.0.0` en production (conteneur) et `127.0.0.1` en développement.
+- Le service des fichiers statiques n'est activé que si `dist/client/index.html` existe : en dev, Vite sert le front et Fastify n'expose jamais `src/`.
