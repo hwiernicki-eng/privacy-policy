@@ -10,7 +10,8 @@ export function App() {
     fetch('/api/v1/ping', { signal: controller.signal })
       .then(async (res) => {
         const body: unknown = await res.json();
-        const pong = typeof body === 'object' && body !== null && 'pong' in body && body.pong === true;
+        const pong =
+          typeof body === 'object' && body !== null && 'pong' in body && body.pong === true;
         setApi(res.ok && pong ? 'ok' : 'erreur');
       })
       .catch((err: unknown) => {

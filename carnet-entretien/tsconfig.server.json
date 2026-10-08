@@ -3,7 +3,7 @@
   "compilerOptions": {
     "lib": ["ES2023"],
     "jsx": "preserve",
-    "types": ["node"]
+    "types": ["node", "vitest/importMeta"]
   },
-  "include": ["src/server", "src/shared", "tsup.config.ts"]
+  "include": ["src/server", "src/shared", "tests", "tsup.config.ts", "vitest.config.ts"]
 }

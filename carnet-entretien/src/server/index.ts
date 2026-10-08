@@ -18,7 +18,11 @@ const shutdown = (signal: string): void => {
     () => process.exit(1),
   );
 };
-process.once('SIGTERM', () => shutdown('SIGTERM'));
-process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => {
+  shutdown('SIGTERM');
+});
+process.once('SIGINT', () => {
+  shutdown('SIGINT');
+});
 
 await app.listen({ port, host });

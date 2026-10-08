@@ -1,0 +1,8 @@
+dist
+coverage
+drizzle
+docs
+pnpm-lock.yaml
+deploy
+.claude
+*.md

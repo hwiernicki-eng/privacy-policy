@@ -16,7 +16,7 @@ Convention : `Mx-Ty` ; « Dépend de » liste les tâches qui doivent être `[x]
 ## Suivi MVP
 
 - [x] M0-T1 Initialisation du dépôt
-- [ ] M0-T2 Outillage qualité et CI
+- [x] M0-T2 Outillage qualité et CI
 - [ ] M0-T3 UI de base (Tailwind, shadcn, tokens)
 - [ ] M0-T4 Base SQLite, schéma et migrations
 - [ ] M0-T5 Config, erreurs, logs, healthcheck

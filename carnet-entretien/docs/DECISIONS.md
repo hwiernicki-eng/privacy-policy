@@ -73,3 +73,9 @@ Format : ADR court. Ajouter une entrée pour toute décision non couverte par `A
 - Décision : Vite 6 + `@vitejs/plugin-react` 5 (la v6 du plugin exige Vite 8), React 18 et `@fastify/static` 8 (compatible Fastify 5) conformément à la stack figée.
 - Adresse d'écoute provisoire (avant `config.ts`, M0-T5) : `HOST` sinon `0.0.0.0` en production (conteneur) et `127.0.0.1` en développement.
 - Le service des fichiers statiques n'est activé que si `dist/client/index.html` existe : en dev, Vite sert le front et Fastify n'expose jamais `src/`.
+
+## ADR-017 — Outillage qualité (M0-T2)
+- ESLint 9 flat config : `typescript-eslint` `strictTypeChecked` + `stylisticTypeChecked` (`parserOptions.project` sur `tsconfig.json` et `tsconfig.server.json`), `eslint-plugin-react-hooks` limité à `src/client`, ordre des imports par `eslint-plugin-import-x` + `eslint-import-resolver-typescript` (alias `@shared/@client/@server` classés « internal ») ; `globals` pour les environnements navigateur/Node.
+- Prettier : `singleQuote`, `printWidth` 100 ; appliqué au code uniquement (`docs/`, `deploy/`, `.claude/` et `*.md` exclus pour ne pas réécrire la spécification).
+- Vitest 3 en projets `unit` (`tests/unit`) et `api` (`tests/api`) ; les tests sont typés via `tsconfig.server.json`.
+- CI : `.github/workflows/ci.yml` à la racine du dépôt (ADR-015), filtrée sur `carnet-entretien/**`, étapes install (cache pnpm) → typecheck → lint → format:check → test → build.
