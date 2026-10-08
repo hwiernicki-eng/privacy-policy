@@ -1,0 +1,37 @@
+# Lancement : depuis la racine du dépôt
+#   mkdir -p data && sudo chown 1000:1000 data
+#   cp .env.example .env   # puis renseigner les valeurs
+#   docker compose --env-file .env -f deploy/docker-compose.yml up -d --build
+#   (--env-file .env : nécessaire pour que ${APP_BIND} soit lu depuis le .env racine)
+name: carnet-entretien
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: carnet-entretien:latest
+    container_name: carnet-entretien
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - ../data:/data
+    ports:
+      # APP_BIND (.env) : 127.0.0.1 par défaut. Option A (Caddy sur le VPS) : IP Tailscale ou LAN du CT,
+      # port filtré au pare-feu pour la seule IP du VPS. Jamais 0.0.0.0 (voir docs/DEPLOYMENT.md).
+      - "${APP_BIND:-127.0.0.1}:3000:3000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
